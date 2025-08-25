@@ -1,6 +1,15 @@
-[package]
-name = "compound-layered-graphs"
-version = "0.1.0"
-edition = "2024"
+[workspace]
+members = [
+    "crates/ade-graph",
+    "crates/ade-strongly-connected-components",
+    "crates/ade-topological-sort",
+    "crates/ade-elementary-circuits",
+    "crates/ade-graph-generators",
+    "crates/ade-traits",
+    "crates/ade-common",
+]
+resolver = "2"
 
-[dependencies]
+[workspace.dependencies]
+# Shared dependencies across all crates
+criterion = { version = "0.7", features = ["html_reports"] }

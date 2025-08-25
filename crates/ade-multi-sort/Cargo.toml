@@ -1,0 +1,12 @@
+[package]
+name = "ade-multi-sort"
+version = "0.1.0"
+edition = "2021"
+description = "A utility crate for multi-criteria sorting of data."
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/riccardoscalco/ade"
+homepage = "https://github.com/riccardoscalco/ade"
+keywords = ["sort", "multi-sort", "criteria", "utility", "data"]
+categories = ["algorithms", "development-tools::library"]
+
+[dependencies]

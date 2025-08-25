@@ -1,5 +1,5 @@
-use crate::graph::NodeTrait;
-use crate::graph::node::Node;
+use graph::node::Node;
+use graph::NodeTrait;
 use std::collections::HashSet;
 
 #[derive(Debug, PartialEq)]

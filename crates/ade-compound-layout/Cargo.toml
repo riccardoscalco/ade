@@ -1,0 +1,10 @@
+[package]
+name = "ade-compound-layout"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+ade-graph = { path = "../ade-graph" }
+ade-strongly-connected-components = { path = "../ade-strongly-connected-components" }
+ade-topological-sort = { path = "../ade-topological-sort" }
+ade-elementary-circuits = { path = "../ade-elementary-circuits" }
