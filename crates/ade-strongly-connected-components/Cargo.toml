@@ -10,8 +10,8 @@ keywords = ["graph", "scc", "strongly-connected-components", "algorithms", "dire
 categories = ["algorithms", "science::mathematics"]
 
 [dependencies]
-ade-traits = { path = "../ade-traits" }
-ade-common = { path = "../ade-common" }
+ade-traits = { path = "../ade-traits", version = "0.1.0" }
+ade-common = { path = "../ade-common", version = "0.1.0" }
 
 [dev-dependencies]
 ade-graph = { path = "../ade-graph" }

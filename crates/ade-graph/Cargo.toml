@@ -11,4 +11,4 @@ categories = ["data-structures", "algorithms", "science::mathematics"]
 
 [dependencies]
 fixedbitset = "0.4"
-ade-traits = { path = "../ade-traits" }
+ade-traits = { path = "../ade-traits", version = "0.1.0" }

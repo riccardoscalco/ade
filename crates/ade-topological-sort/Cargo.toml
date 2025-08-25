@@ -10,8 +10,8 @@ keywords = ["graph", "topological-sort", "algorithm", "directed", "sorting"]
 categories = ["algorithms", "science::mathematics"]
 
 [dependencies]
-ade-traits = { path = "../ade-traits" }
-ade-common = { path = "../ade-common" }
+ade-traits = { path = "../ade-traits", version = "0.1.0" }
+ade-common = { path = "../ade-common", version = "0.1.0" }
 fixedbitset = "0.4"
 
 [dev-dependencies]

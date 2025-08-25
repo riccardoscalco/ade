@@ -10,9 +10,9 @@ keywords = ["graph", "circuits", "johnson", "algorithm", "directed"]
 categories = ["algorithms", "science::mathematics"]
 
 [dependencies]
-ade-traits = { path = "../ade-traits" }
-ade-strongly-connected-components = { path = "../ade-strongly-connected-components" }
-ade-common = { path = "../ade-common" }
+ade-traits = { path = "../ade-traits", version = "0.1.0" }
+ade-strongly-connected-components = { path = "../ade-strongly-connected-components", version = "0.1.0" }
+ade-common = { path = "../ade-common", version = "0.1.0" }
 smallvec = "1.15.1"
 
 [dev-dependencies]
