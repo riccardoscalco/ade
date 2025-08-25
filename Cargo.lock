@@ -8,7 +8,7 @@ version = "0.1.0"
 
 [[package]]
 name = "ade-elementary-circuits"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "ade-common",
  "ade-graph",
@@ -24,7 +24,7 @@ dependencies = [
 
 [[package]]
 name = "ade-graph"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "ade-traits",
  "fixedbitset 0.4.2",
@@ -36,7 +36,7 @@ version = "0.1.0"
 
 [[package]]
 name = "ade-strongly-connected-components"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "ade-common",
  "ade-graph",
@@ -48,7 +48,7 @@ dependencies = [
 
 [[package]]
 name = "ade-topological-sort"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "ade-common",
  "ade-graph",

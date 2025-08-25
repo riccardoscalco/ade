@@ -1,6 +1,6 @@
 [package]
 name = "ade-graph"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 description = "Core graph data structures and utilities for directed graphs."
 license = "MIT OR Apache-2.0"

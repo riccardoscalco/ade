@@ -1,6 +1,6 @@
 [package]
 name = "ade-elementary-circuits"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 description = "Implementation of Johnson's algorithm for finding elementary circuits in directed graphs."
 license = "MIT OR Apache-2.0"

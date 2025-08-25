@@ -1,6 +1,6 @@
 [package]
 name = "ade-strongly-connected-components"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 description = "Algorithms for finding strongly connected components (SCCs) in directed graphs."
 license = "MIT OR Apache-20"
