@@ -7,7 +7,7 @@ license = "MIT OR Apache-2.0"
 repository = "https://github.com/riccardoscalco/ade"
 homepage = "https://github.com/riccardoscalco/ade"
 keywords = ["graph", "circuits", "johnson", "algorithm", "directed"]
-categories = ["algorithms", "science::mathematics"]
+categories = ["algorithms", "mathematics"]
 
 [dependencies]
 ade-traits = { path = "../ade-traits", version = "0.1.0" }

@@ -7,6 +7,6 @@ license = "MIT OR Apache-2.0"
 repository = "https://github.com/riccardoscalco/ade"
 homepage = "https://github.com/riccardoscalco/ade"
 keywords = ["sort", "multi-sort", "criteria", "utility", "data"]
-categories = ["algorithms", "development-tools::library"]
+categories = ["algorithms"]
 
 [dependencies]
