@@ -27,14 +27,6 @@ impl NodeTrait for Node {
         self.key
     }
 
-    fn fresh_copy(&self) -> Self {
-        Node {
-            key: self.key,
-            predecessors: HashSet::new(),
-            successors: HashSet::new(),
-        }
-    }
-
     fn predecessors(&self) -> &HashSet<u32> {
         &self.predecessors
     }
@@ -70,19 +62,6 @@ mod tests {
         assert_eq!(node.key(), 1);
         assert!(node.predecessors().is_empty());
         assert!(node.successors().is_empty());
-    }
-
-    #[test]
-    fn test_fresh_copy() {
-        let mut node = Node::new(42);
-        node.add_predecessor(1);
-        node.add_successor(2);
-
-        let fresh_node = node.fresh_copy();
-
-        assert_eq!(fresh_node.key(), 42);
-        assert!(fresh_node.predecessors().is_empty());
-        assert!(fresh_node.successors().is_empty());
     }
 
     #[test]

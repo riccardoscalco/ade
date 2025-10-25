@@ -91,29 +91,6 @@ impl<N: NodeTrait, E: EdgeTrait> Graph<N, E> {
             }
         }
     }
-
-    // pub fn get_subgraph_graph(&self, node_keys: &[u32]) -> Graph<N, E> {
-    //     let mut subgraph = Graph::<N, E>::new(Vec::new(), Vec::new());
-    //     let node_key_set: HashSet<u32> = node_keys.iter().copied().collect();
-
-    //     // Add nodes that are in the key set
-    //     for node in self.get_nodes() {
-    //         if node_key_set.contains(&node.key()) {
-    //             subgraph.add_node(node.fresh_copy());
-    //         }
-    //     }
-
-    //     // Add edges where both source and target are in the key set
-    //     for edge in self.get_edges() {
-    //         let source = edge.source();
-    //         let target = edge.target();
-    //         if node_key_set.contains(&source) && node_key_set.contains(&target) {
-    //             subgraph.add_edge(edge.clone());
-    //         }
-    //     }
-
-    //     subgraph
-    // }
 }
 
 impl<N: NodeTrait, E: EdgeTrait> GraphViewTrait<N, E> for Graph<N, E> {
