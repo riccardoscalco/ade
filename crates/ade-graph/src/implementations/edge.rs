@@ -15,11 +15,6 @@ impl Edge {
     pub fn key(&self) -> (u32, u32) {
         (self.source, self.target)
     }
-
-    /// Creates a key from source and target IDs
-    pub fn make_key(source: u32, target: u32) -> (u32, u32) {
-        (source, target)
-    }
 }
 
 impl EdgeTrait for Edge {
@@ -63,19 +58,6 @@ mod tests {
     fn test_key() {
         let edge = Edge::new(1, 2);
         assert_eq!(edge.key(), (1, 2));
-    }
-
-    #[test]
-    fn test_make_key() {
-        let key = Edge::make_key(3, 4);
-        assert_eq!(key, (3, 4));
-    }
-
-    #[test]
-    fn test_key_consistency() {
-        let edge = Edge::new(7, 8);
-        let manual_key = Edge::make_key(7, 8);
-        assert_eq!(edge.key(), manual_key);
     }
 
     #[test]
