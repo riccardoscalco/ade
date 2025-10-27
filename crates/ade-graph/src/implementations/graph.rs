@@ -3,6 +3,80 @@ use ade_traits::{EdgeTrait, GraphViewTrait, NodeTrait};
 use std::collections::HashMap;
 use std::fmt::Debug;
 
+/// A directed graph data structure with nodes and edges.
+///
+/// A `Graph` stores nodes of type `N` and directed edges of type `E`, where each node
+/// is identified by a unique `u32` key and each edge connects a source node to a target node.
+///
+/// # Features
+///
+/// - **O(1) average-case** operations for adding, removing, and querying nodes and edges
+/// - Support for **self-loops** (edges from a node to itself)
+/// - Automatic **edge cleanup** when removing nodes
+/// - **Filtering** capabilities to create subgraphs
+///
+/// # Type Parameters
+///
+/// * `N` - Node type implementing [`NodeTrait`]
+/// * `E` - Edge type implementing [`EdgeTrait`]
+///
+/// # Examples
+///
+/// Creating a graph from vectors:
+///
+/// ```
+/// use ade_graph::implementations::{Graph, Node, Edge};
+/// use ade_graph::GraphViewTrait;
+///
+/// let nodes = vec![Node::new(1), Node::new(2), Node::new(3)];
+/// let edges = vec![Edge::new(1, 2), Edge::new(2, 3)];
+/// let graph = Graph::new(nodes, edges);
+///
+/// assert_eq!(graph.get_nodes().count(), 3);
+/// assert!(graph.has_edge(1, 2));
+/// assert!(graph.has_edge(2, 3));
+/// ```
+///
+/// Building a graph incrementally:
+///
+/// ```
+/// use ade_graph::implementations::{Graph, Node, Edge};
+/// use ade_graph::GraphViewTrait;
+///
+/// let mut graph = Graph::<Node, Edge>::new(vec![], vec![]);
+///
+/// // Add nodes
+/// graph.add_node(Node::new(1));
+/// graph.add_node(Node::new(2));
+/// graph.add_node(Node::new(3));
+///
+/// // Add edges
+/// graph.add_edge(Edge::new(1, 2));
+/// graph.add_edge(Edge::new(2, 3));
+/// graph.add_edge(Edge::new(3, 1)); // Creates a cycle
+///
+/// assert_eq!(graph.get_nodes().count(), 3);
+/// assert!(graph.has_edge(3, 1));
+/// ```
+///
+/// Removing nodes automatically removes connected edges:
+///
+/// ```
+/// use ade_graph::implementations::{Graph, Node, Edge};
+/// use ade_graph::GraphViewTrait;
+///
+/// let mut graph = Graph::<Node, Edge>::new(
+///     vec![Node::new(1), Node::new(2), Node::new(3)],
+///     vec![Edge::new(1, 2), Edge::new(2, 3)],
+/// );
+///
+/// // Removing node 2 also removes edges (1,2) and (2,3)
+/// graph.remove_node(2);
+///
+/// assert!(!graph.has_node(2));
+/// assert!(!graph.has_edge(1, 2));
+/// assert!(!graph.has_edge(2, 3));
+/// ```
 #[derive(Debug)]
 pub struct Graph<N, E> {
     nodes: HashMap<u32, N>,
@@ -10,6 +84,50 @@ pub struct Graph<N, E> {
 }
 
 impl<N: NodeTrait, E: EdgeTrait> Graph<N, E> {
+    /// Creates a new graph from vectors of nodes and edges.
+    ///
+    /// The nodes and edges are added to the graph in the order they appear in the vectors.
+    /// If duplicate nodes (same key) are provided, later nodes will replace earlier ones.
+    /// If duplicate edges (same source-target pair) are provided, later edges will replace earlier ones.
+    ///
+    /// # Arguments
+    ///
+    /// * `nodes` - A vector of nodes to add to the graph
+    /// * `edges` - A vector of edges to add to the graph
+    ///
+    /// # Returns
+    ///
+    /// A new `Graph` instance containing the provided nodes and edges.
+    ///
+    /// # Panics
+    ///
+    /// Panics if any edge references a node that is not in the nodes vector.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use ade_graph::implementations::{Graph, Node, Edge};
+    /// use ade_graph::GraphViewTrait;
+    ///
+    /// // Create an empty graph
+    /// let graph = Graph::<Node, Edge>::new(vec![], vec![]);
+    /// assert!(graph.is_empty());
+    /// ```
+    ///
+    /// ```
+    /// use ade_graph::implementations::{Graph, Node, Edge};
+    /// use ade_graph::GraphViewTrait;
+    ///
+    /// // Create a graph with nodes and edges
+    /// let nodes = vec![Node::new(1), Node::new(2), Node::new(3)];
+    /// let edges = vec![Edge::new(1, 2), Edge::new(2, 3)];
+    /// let graph = Graph::new(nodes, edges);
+    ///
+    /// assert_eq!(graph.get_nodes().count(), 3);
+    /// assert_eq!(graph.get_edges().count(), 2);
+    /// assert!(graph.has_edge(1, 2));
+    /// assert!(graph.has_edge(2, 3));
+    /// ```
     pub fn new(nodes: Vec<N>, edges: Vec<E>) -> Self {
         let mut graph = Graph {
             nodes: HashMap::with_capacity(nodes.len()),
