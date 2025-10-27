@@ -27,10 +27,70 @@ impl<N: NodeTrait, E: EdgeTrait> Graph<N, E> {
         graph
     }
 
+    /// Adds a node to the graph.
+    ///
+    /// If a node with the same key already exists in the graph, it will be replaced
+    /// and the old node will be returned.
+    ///
+    /// # Arguments
+    ///
+    /// * `node` - The node to add to the graph
+    ///
+    /// # Returns
+    ///
+    /// * `Some(old_node)` - If a node with the same key already existed, returns the replaced node
+    /// * `None` - If no node with this key existed previously
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use ade_graph::implementations::{Graph, Node, Edge};
+    ///
+    /// let mut graph = Graph::<Node, Edge>::new(vec![], vec![]);
+    ///
+    /// // Adding a new node returns None
+    /// assert!(graph.add_node(Node::new(1)).is_none());
+    ///
+    /// // Adding a node with the same key returns the old node
+    /// assert!(graph.add_node(Node::new(1)).is_some());
+    /// ```
     pub fn add_node(&mut self, node: N) ->  Option<N> {
         self.nodes.insert(node.key(), node)
     }
 
+    /// Removes a node from the graph.
+    ///
+    /// This method also removes all edges connected to the node (both incoming and outgoing).
+    /// The predecessors and successors of adjacent nodes are updated accordingly.
+    ///
+    /// # Arguments
+    ///
+    /// * `key` - The key of the node to remove
+    ///
+    /// # Returns
+    ///
+    /// * `Some(node)` - If the node existed, returns the removed node
+    /// * `None` - If no node with this key existed
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use ade_graph::implementations::{Graph, Node, Edge};
+    /// use ade_graph::GraphViewTrait;
+    ///
+    /// let mut graph = Graph::<Node, Edge>::new(vec![], vec![]);
+    /// graph.add_node(Node::new(1));
+    /// graph.add_node(Node::new(2));
+    /// graph.add_edge(Edge::new(1, 2));
+    ///
+    /// // Remove the node and verify edges are also removed
+    /// assert!(graph.remove_node(1).is_some());
+    /// assert!(!graph.has_node(1));
+    /// assert!(!graph.has_edge(1, 2));
+    ///
+    /// // Trying to remove it again returns None
+    /// assert!(graph.remove_node(1).is_none());
+    /// ```
     pub fn remove_node(&mut self, key: u32) -> Option<N> {
         if let Some(node) = self.nodes.get(&key) {
             let mut edges_to_remove = Vec::new();
@@ -44,7 +104,7 @@ impl<N: NodeTrait, E: EdgeTrait> Graph<N, E> {
             }
     
             for (source, target) in edges_to_remove {
-                self.remove_edge((source, target));
+                self.remove_edge(source, target);
             }
 
             return self.nodes.remove(&key)
@@ -52,6 +112,45 @@ impl<N: NodeTrait, E: EdgeTrait> Graph<N, E> {
         None
     }
 
+    /// Adds an edge to the graph.
+    ///
+    /// This method creates a directed edge from source to target and updates the
+    /// successors and predecessors of the connected nodes. Self-loops (edges where
+    /// source equals target) are supported.
+    ///
+    /// If an edge with the same key (source, target) already exists, it will be replaced
+    /// and the old edge will be returned.
+    ///
+    /// # Arguments
+    ///
+    /// * `edge` - The edge to add to the graph
+    ///
+    /// # Returns
+    ///
+    /// * `Some(old_edge)` - If an edge with the same key already existed, returns the replaced edge
+    /// * `None` - If no edge with this key existed previously
+    ///
+    /// # Panics
+    ///
+    /// Panics if either the source or target node does not exist in the graph.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use ade_graph::implementations::{Graph, Node, Edge};
+    /// use ade_graph::GraphViewTrait;
+    ///
+    /// let mut graph = Graph::<Node, Edge>::new(vec![], vec![]);
+    /// graph.add_node(Node::new(1));
+    /// graph.add_node(Node::new(2));
+    ///
+    /// // Adding a new edge returns None
+    /// assert!(graph.add_edge(Edge::new(1, 2)).is_none());
+    /// assert!(graph.has_edge(1, 2));
+    ///
+    /// // Adding the same edge again returns the old edge
+    /// assert!(graph.add_edge(Edge::new(1, 2)).is_some());
+    /// ```
     pub fn add_edge(&mut self, edge: E) -> Option<E> {
         let (source, target) = edge.key();
         
@@ -76,15 +175,49 @@ impl<N: NodeTrait, E: EdgeTrait> Graph<N, E> {
         }
     }
 
-    pub fn remove_edge(&mut self, (source, target): (u32, u32)) -> Option<E> {
-        let key = (source, target);
-
-
+    /// Removes an edge from the graph.
+    ///
+    /// This method removes the directed edge from source to target and updates the
+    /// successors and predecessors of the connected nodes accordingly.
+    ///
+    /// # Arguments
+    ///
+    /// * `source` - The key of the source node
+    /// * `target` - The key of the target node
+    ///
+    /// # Returns
+    ///
+    /// * `Some(edge)` - If the edge existed, returns the removed edge
+    /// * `None` - If no edge with this key existed
+    ///
+    /// # Panics
+    ///
+    /// Panics if either the source or target node does not exist in the graph.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use ade_graph::implementations::{Graph, Node, Edge};
+    /// use ade_graph::GraphViewTrait;
+    ///
+    /// let mut graph = Graph::<Node, Edge>::new(vec![], vec![]);
+    /// graph.add_node(Node::new(1));
+    /// graph.add_node(Node::new(2));
+    /// graph.add_edge(Edge::new(1, 2));
+    ///
+    /// // Remove the edge
+    /// assert!(graph.remove_edge(1, 2).is_some());
+    /// assert!(!graph.has_edge(1, 2));
+    ///
+    /// // Trying to remove it again returns None
+    /// assert!(graph.remove_edge(1, 2).is_none());
+    /// ```
+    pub fn remove_edge(&mut self, source:u32, target:u32) -> Option<E> {
         if !self.nodes.contains_key(&source) || !self.nodes.contains_key(&target) {
             panic!("Node {} or {} not found", source, target);
         }
 
-        match self.edges.remove(&key) {
+        match self.edges.remove(&(source, target)) {
             Some(edge) => {
                 if let Some(source_node) = self.nodes.get_mut(&source) {
                     source_node.remove_successor(target);
@@ -423,12 +556,12 @@ mod tests {
         graph.add_edge(Edge::new(1, 2));
         assert!(graph.has_edge(1, 2));
 
-        let removed_edge = graph.remove_edge((1, 2));
+        let removed_edge = graph.remove_edge(1, 2);
         assert!(removed_edge.is_some());
         assert_eq!(removed_edge.unwrap().source(), 1);
         assert!(!graph.has_edge(1, 2));
 
-        let removed_edge = graph.remove_edge((1, 2));
+        let removed_edge = graph.remove_edge(1, 2);
         assert!(removed_edge.is_none());
 
         // Check that predecessors and successors are also removed
@@ -443,7 +576,7 @@ mod tests {
         graph.add_node(Node::new(1));
         graph.add_node(Node::new(2));
         graph.add_edge(Edge::new(1, 2));
-        graph.remove_edge((1, 3));
+        graph.remove_edge(1, 3);
     }
 
     #[test]
