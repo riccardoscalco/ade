@@ -27,37 +27,32 @@ impl<N: NodeTrait, E: EdgeTrait> Graph<N, E> {
         graph
     }
 
-    pub fn add_node(&mut self, node: N) -> bool {
-        self.nodes.insert(node.key(), node).is_none()
+    pub fn add_node(&mut self, node: N) ->  Option<N> {
+        self.nodes.insert(node.key(), node)
     }
 
-    pub fn remove_node(&mut self, key: u32) {
-        // Collect edge keys to remove before mutating
-        let edges_to_remove: Vec<(u32, u32)> = if let Some(node) = self.nodes.get(&key) {
-            let mut edges = Vec::new();
-
-            // Incoming edges (predecessor -> this node)
-            for predecessor in node.predecessors() {
-                edges.push((*predecessor, key));
+    pub fn remove_node(&mut self, key: u32) -> Option<N> {
+        // Prima raccogliamo tutti gli archi da rimuovere
+        if let Some(node) = self.nodes.get(&key) {
+            // Colleziona archi entranti e uscenti
+            let mut edges_to_remove = Vec::new();
+    
+            for &predecessor in node.predecessors() {
+                edges_to_remove.push((predecessor, key));
             }
-
-            // Outgoing edges (this node -> successor)
-            for successor in node.successors() {
-                edges.push((key, *successor));
+    
+            for &successor in node.successors() {
+                edges_to_remove.push((key, successor));
             }
-
-            edges
-        } else {
-            Vec::new()
-        };
-
-        // Remove all connected edges
-        for (source, target) in edges_to_remove {
-            self.remove_edge(source, target);
+    
+            // Rimuovi gli archi relativi
+            for (src, dst) in edges_to_remove {
+                self.remove_edge(src, dst);
+            }
         }
-
-        // Remove the node itself
-        self.nodes.remove(&key);
+    
+        // Rimuovi e ritorna il nodo, se esisteva
+        self.nodes.remove(&key)
     }
 
     pub fn add_edge(&mut self, edge: E) -> bool {
@@ -226,8 +221,8 @@ mod tests {
     fn test_add_node() {
         let mut graph = Graph::<Node, Edge>::new(Vec::new(), Vec::new());
 
-        assert!(graph.add_node(Node::new(1))); // Adding a new node should return true
-        assert!(!graph.add_node(Node::new(1))); // Adding the same node again should return false
+        assert!(graph.add_node(Node::new(1)).is_none()); // Adding a new node should return None
+        assert!(graph.add_node(Node::new(1)).is_some()); // Adding the same node again should return Some(Node)
     }
 
     #[test]
@@ -411,11 +406,15 @@ mod tests {
         graph.add_edge(Edge::new(3, 1));
         assert!(graph.has_edge(3, 1));
 
-        graph.remove_node(1);
+        let removed_node = graph.remove_node(1);
+        assert!(removed_node.is_some());
+        assert_eq!(removed_node.unwrap().key(), 1);
         assert!(!graph.has_node(1));
         assert!(!graph.has_edge(1, 2));
         assert!(!graph.has_edge(3, 1));
         assert!(graph.has_edge(2, 3));
+
+
 
         let node_b = graph.get_node(2);
         assert!(!node_b.predecessors().contains(&1));
