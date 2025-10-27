@@ -10,11 +10,6 @@ impl Edge {
     pub fn new(source: u32, target: u32) -> Self {
         Edge { source, target }
     }
-
-    /// Returns the key used for HashMap storage
-    pub fn key(&self) -> (u32, u32) {
-        (self.source, self.target)
-    }
 }
 
 impl EdgeTrait for Edge {
@@ -28,6 +23,10 @@ impl EdgeTrait for Edge {
 
     fn target(&self) -> u32 {
         self.target
+    }
+
+    fn key(&self) -> (u32, u32) {
+        (self.source, self.target)
     }
 }
 

@@ -32,9 +32,7 @@ impl<N: NodeTrait, E: EdgeTrait> Graph<N, E> {
     }
 
     pub fn remove_node(&mut self, key: u32) -> Option<N> {
-        // Prima raccogliamo tutti gli archi da rimuovere
         if let Some(node) = self.nodes.get(&key) {
-            // Colleziona archi entranti e uscenti
             let mut edges_to_remove = Vec::new();
     
             for &predecessor in node.predecessors() {
@@ -45,45 +43,58 @@ impl<N: NodeTrait, E: EdgeTrait> Graph<N, E> {
                 edges_to_remove.push((key, successor));
             }
     
-            // Rimuovi gli archi relativi
-            for (src, dst) in edges_to_remove {
-                self.remove_edge(src, dst);
+            for (source, target) in edges_to_remove {
+                self.remove_edge((source, target));
             }
+
+            return self.nodes.remove(&key)
         }
-    
-        // Rimuovi e ritorna il nodo, se esisteva
-        self.nodes.remove(&key)
+        None
     }
 
-    pub fn add_edge(&mut self, edge: E) -> bool {
-        if !self.nodes.contains_key(&edge.source()) || !self.nodes.contains_key(&edge.target()) {
-            return false;
+    pub fn add_edge(&mut self, edge: E) -> Option<E> {
+        let (source, target) = edge.key();
+        
+        if source == target {
+            match self.nodes.get_mut(&source) {
+                Some(node) => {
+                    node.add_successor(target);
+                    node.add_predecessor(source);
+                    return self.edges.insert((source, target), edge)
+                }
+                None => panic!("Node {} not found", source)
+            }
         }
-
-        // Update successors and predecessors
-        if let Some(source_node) = self.nodes.get_mut(&edge.source()) {
-            source_node.add_successor(edge.target());
+        
+        match self.nodes.get_disjoint_mut([&source, &target]) {
+            [Some(source_node), Some(target_node)] => {
+                source_node.add_successor(target);
+                target_node.add_predecessor(source);
+                self.edges.insert((source, target), edge)
+            }
+            _ => panic!("Node {} or {} not found", source, target)
         }
-        if let Some(target_node) = self.nodes.get_mut(&edge.target()) {
-            target_node.add_predecessor(edge.source());
-        }
-
-        self.edges
-            .insert((edge.source(), edge.target()), edge)
-            .is_none()
     }
 
-    pub fn remove_edge(&mut self, source: u32, target: u32) {
-        let edge_key = (source, target);
+    pub fn remove_edge(&mut self, (source, target): (u32, u32)) -> Option<E> {
+        let key = (source, target);
 
-        if self.edges.remove(&edge_key).is_some() {
-            // Update node connections
-            if let Some(source_node) = self.nodes.get_mut(&source) {
-                source_node.remove_successor(target);
+
+        if !self.nodes.contains_key(&source) || !self.nodes.contains_key(&target) {
+            panic!("Node {} or {} not found", source, target);
+        }
+
+        match self.edges.remove(&key) {
+            Some(edge) => {
+                if let Some(source_node) = self.nodes.get_mut(&source) {
+                    source_node.remove_successor(target);
+                }
+                if let Some(target_node) = self.nodes.get_mut(&target) {
+                    target_node.remove_predecessor(source);
+                }
+                Some(edge)
             }
-            if let Some(target_node) = self.nodes.get_mut(&target) {
-                target_node.remove_predecessor(source);
-            }
+            None => None,
         }
     }
 }
@@ -303,14 +314,45 @@ mod tests {
         graph.add_node(Node::new(1));
         graph.add_node(Node::new(2));
 
-        assert!(graph.add_edge(Edge::new(1, 2))); // Adding a new edge should return true
-        assert!(!graph.add_edge(Edge::new(1, 2))); // Adding the same edge again should return false
+        assert!(graph.add_edge(Edge::new(1, 2)).is_none()); // Adding a new edge should return None
+        assert!(graph.add_edge(Edge::new(1, 2)).is_some()); // Adding the same edge again should return Some(Edge)
 
         assert!(graph.has_edge(1, 2));
 
         // Check predecessors and successors
         assert!(graph.get_node(1).successors().contains(&2));
         assert!(graph.get_node(2).predecessors().contains(&1));
+    }
+
+    #[test]
+    fn test_add_edge_loop() {
+        let mut graph = Graph::<Node, Edge>::new(Vec::new(), Vec::new());
+        graph.add_node(Node::new(1));
+
+        assert!(graph.add_edge(Edge::new(1, 1)).is_none()); // Adding a new edge should return None
+        assert!(graph.add_edge(Edge::new(1, 1)).is_some()); // Adding the same edge again should return Some(Edge)
+        
+        assert!(graph.has_edge(1, 1));
+
+        // Check predecessors and successors
+        assert!(graph.get_node(1).successors().contains(&1));
+        assert!(graph.get_node(1).predecessors().contains(&1));
+    }
+
+    #[test]
+    #[should_panic(expected = "Node 2 or 1 not found")]
+    fn test_add_edge_panic() {
+        let mut graph = Graph::<Node, Edge>::new(Vec::new(), Vec::new());
+        graph.add_node(Node::new(1));
+        graph.add_edge(Edge::new(2, 1));
+    }
+
+    #[test]
+    #[should_panic(expected = "Node 2 not found")]
+    fn test_add_edge_loop_panic() {
+        let mut graph = Graph::<Node, Edge>::new(Vec::new(), Vec::new());
+        graph.add_node(Node::new(1));
+        graph.add_edge(Edge::new(2, 2));
     }
 
     #[test]
@@ -381,12 +423,27 @@ mod tests {
         graph.add_edge(Edge::new(1, 2));
         assert!(graph.has_edge(1, 2));
 
-        graph.remove_edge(1, 2);
+        let removed_edge = graph.remove_edge((1, 2));
+        assert!(removed_edge.is_some());
+        assert_eq!(removed_edge.unwrap().source(), 1);
         assert!(!graph.has_edge(1, 2));
+
+        let removed_edge = graph.remove_edge((1, 2));
+        assert!(removed_edge.is_none());
 
         // Check that predecessors and successors are also removed
         assert!(!graph.get_node(1).successors().contains(&2));
         assert!(!graph.get_node(2).predecessors().contains(&1));
+    }
+
+    #[test]
+    #[should_panic(expected = "Node 1 or 3 not found")]
+    fn test_remove_edge_panic() {
+        let mut graph = Graph::<Node, Edge>::new(Vec::new(), Vec::new());
+        graph.add_node(Node::new(1));
+        graph.add_node(Node::new(2));
+        graph.add_edge(Edge::new(1, 2));
+        graph.remove_edge((1, 3));
     }
 
     #[test]
@@ -409,12 +466,15 @@ mod tests {
         let removed_node = graph.remove_node(1);
         assert!(removed_node.is_some());
         assert_eq!(removed_node.unwrap().key(), 1);
+
+        let removed_node = graph.remove_node(1);
+        assert!(removed_node.is_none());
+
+        // Check that the node and edges are removed
         assert!(!graph.has_node(1));
         assert!(!graph.has_edge(1, 2));
         assert!(!graph.has_edge(3, 1));
         assert!(graph.has_edge(2, 3));
-
-
 
         let node_b = graph.get_node(2);
         assert!(!node_b.predecessors().contains(&1));
@@ -423,6 +483,8 @@ mod tests {
         let node_c = graph.get_node(3);
         assert!(node_c.predecessors().contains(&2));
         assert!(!node_c.successors().contains(&1));
+
+
     }
 
     #[test]
