@@ -62,6 +62,9 @@ dependencies = [
 [[package]]
 name = "ade-traits"
 version = "0.1.0"
+dependencies = [
+ "ade-graph",
+]
 
 [[package]]
 name = "ahash"
