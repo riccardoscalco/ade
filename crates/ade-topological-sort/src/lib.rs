@@ -115,7 +115,6 @@ mod tests {
     use ade_graph::implementations::Node;
     use ade_graph::utils::build::build_graph;
     use ade_graph_generators::generate_random_graph_data;
-    //use hierarchy::node::{HierarchyNode, NodeType};
 
     #[test]
     fn test_topological_sort() {
@@ -210,29 +209,4 @@ mod tests {
         let sorting = topological_sort::<Node, Edge, u32, fn(&Node) -> u32>(&graph, None);
         assert!(sorting.is_ok());
     }
-
-    // #[test]
-    // fn test_topological_sort_with_compare_by_layer() {
-    //     let mut n1 = HierarchyNode::new(1, NodeType::Base);
-    //     let mut n2 = HierarchyNode::new(2, NodeType::Base);
-    //     let mut n3 = HierarchyNode::new(3, NodeType::Base);
-
-    //     n1.set_layer(3);
-    //     n2.set_layer(2);
-    //     n3.set_layer(1);
-
-    //     let e1 = Edge::new(1, 2);
-    //     let e2 = Edge::new(1, 3);
-
-    //     let graph: Graph<HierarchyNode, Edge> =
-    //         Graph::<HierarchyNode, Edge>::new(vec![n1, n2, n3], vec![e1, e2]);
-
-    //     let sorted = topological_sort(
-    //         &graph,
-    //         Some(|a: &HierarchyNode, b: &HierarchyNode| a.layer().cmp(&b.layer())),
-    //     )
-    //     .unwrap();
-
-    //     assert_eq!(sorted, vec![1, 3, 2]);
-    // }
 }
