@@ -136,6 +136,7 @@ mod tests {
     use crate::utils::circuits_equal;
     use crate::utils::number_circuits;
     use ade_common::{self, assert_panics_with};
+    use ade_graph::implementations::{Node, Edge};
     use ade_graph::utils::build::build_graph;
     use ade_graph_generators::complete_graph_data;
     use ade_graph_generators::generate_random_graph_data;
@@ -146,7 +147,7 @@ mod tests {
 
     #[test]
     fn test_elementary_circuits_1() {
-        let graph = build_graph(vec![0, 1, 2], vec![(0, 1), (1, 2), (2, 1)]);
+        let graph = build_graph::<Node, Edge>(vec![0, 1, 2], vec![(0, 1), (1, 2), (2, 1)]);
         let circuits = elementary_circuits(&graph);
         let expected = vec![vec![1, 2, 1]];
 
@@ -155,7 +156,7 @@ mod tests {
 
     #[test]
     fn test_elementary_circuits_non_sequential_keys() {
-        let graph = build_graph(vec![1, 3, 5], vec![(1, 3), (3, 5), (5, 1)]);
+        let graph = build_graph::<Node, Edge>(vec![1, 3, 5], vec![(1, 3), (3, 5), (5, 1)]);
         assert_panics_with!(
             elementary_circuits(&graph),
             ade_common::INVALID_KEY_SEQUENCE
@@ -164,7 +165,7 @@ mod tests {
 
     #[test]
     fn test_elementary_circuits_3() {
-        let graph = build_graph(vec![0, 1, 2], vec![(0, 1), (1, 2)]);
+        let graph = build_graph::<Node, Edge>(vec![0, 1, 2], vec![(0, 1), (1, 2)]);
         let circuits = elementary_circuits(&graph);
         let expected = vec![];
 
@@ -173,7 +174,7 @@ mod tests {
 
     #[test]
     fn test_elementary_circuits_4() {
-        let graph = build_graph(vec![0, 1, 2], vec![]);
+        let graph = build_graph::<Node, Edge>(vec![0, 1, 2], vec![]);
         let circuits = elementary_circuits(&graph);
         let expected = vec![];
 
@@ -182,7 +183,7 @@ mod tests {
 
     #[test]
     fn test_elementary_circuits_5() {
-        let graph = build_graph(vec![], vec![]);
+        let graph = build_graph::<Node, Edge>(vec![], vec![]);
         let circuits = elementary_circuits(&graph);
         let expected = vec![];
 
@@ -191,7 +192,7 @@ mod tests {
 
     #[test]
     fn test_elementary_circuits_6() {
-        let graph = build_graph(vec![0], vec![(0, 0)]);
+        let graph = build_graph::<Node, Edge>(vec![0], vec![(0, 0)]);
         let circuits = elementary_circuits(&graph);
         let expected = vec![vec![0, 0]];
 
@@ -200,7 +201,7 @@ mod tests {
 
     #[test]
     fn test_elementary_circuits_7() {
-        let graph = build_graph(vec![0, 1], vec![(0, 0), (1, 1), (0, 1)]);
+        let graph = build_graph::<Node, Edge>(vec![0, 1], vec![(0, 0), (1, 1), (0, 1)]);
         let circuits = elementary_circuits(&graph);
         let expected = vec![vec![0, 0], vec![1, 1]];
 
@@ -209,7 +210,7 @@ mod tests {
 
     #[test]
     fn test_elementary_circuits_2() {
-        let graph = build_graph(
+        let graph = build_graph::<Node, Edge>(
             vec![0, 1, 2, 3, 4, 5, 6, 7, 8],
             vec![
                 (0, 1),
@@ -246,7 +247,7 @@ mod tests {
     fn test_elementary_circuits_complete_graph() {
         let n: usize = 6;
         let (nodes, edges) = complete_graph_data(n);
-        let graph = build_graph(nodes, edges);
+        let graph = build_graph::<Node, Edge>(nodes, edges);
         let circuits = elementary_circuits(&graph);
 
         assert_eq!(circuits.len(), number_circuits(n))
@@ -298,7 +299,7 @@ mod tests {
                 }
             }
 
-            let graph = build_graph(nodes.clone(), unique_edges.clone());
+            let graph = build_graph::<Node, Edge>(nodes.clone(), unique_edges.clone());
             let circuits = elementary_circuits(&graph);
 
             let g = PetGraph::<(), ()>::from_edges(unique_edges.clone());

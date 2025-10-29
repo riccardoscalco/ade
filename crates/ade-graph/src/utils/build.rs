@@ -1,13 +1,17 @@
-use crate::implementations::Edge;
+use ade_traits::NodeTrait;
+use ade_traits::EdgeTrait;
 use crate::implementations::Graph;
-use crate::implementations::Node;
 
 /// Build a graph from node keys and edge pairs
-pub fn build_graph(node_keys: Vec<u32>, edge_pairs: Vec<(u32, u32)>) -> Graph<Node, Edge> {
-    let nodes: Vec<Node> = node_keys.into_iter().map(Node::new).collect();
-    let edges: Vec<Edge> = edge_pairs
+pub fn build_graph<N, E>(node_keys: Vec<u32>, edge_pairs: Vec<(u32, u32)>) -> Graph<N, E>
+where
+    N: NodeTrait,
+    E: EdgeTrait,
+{
+    let nodes: Vec<N> = node_keys.into_iter().map(|key| N::new(key)).collect();
+    let edges: Vec<E> = edge_pairs
         .into_iter()
-        .map(|(source, target)| Edge::new(source, target))
+        .map(|(source, target)| <E as EdgeTrait>::new(source, target))
         .collect();
 
     Graph::new(nodes, edges)
@@ -17,10 +21,12 @@ pub fn build_graph(node_keys: Vec<u32>, edge_pairs: Vec<(u32, u32)>) -> Graph<No
 mod tests {
     use super::*;
     use ade_traits::{GraphViewTrait, NodeTrait};
+    use crate::implementations::Edge;
+    use crate::implementations::Node;
 
     #[test]
     fn test_build_empty_graph() {
-        let graph = build_graph(vec![], vec![]);
+        let graph = build_graph::<Node, Edge>(vec![], vec![]);
 
         assert_eq!(graph.get_nodes().count(), 0);
         assert_eq!(graph.get_edges().count(), 0);
@@ -28,7 +34,7 @@ mod tests {
 
     #[test]
     fn test_build_graph_single_node() {
-        let graph = build_graph(vec![1], vec![]);
+        let graph = build_graph::<Node, Edge>(vec![1], vec![]);
 
         assert_eq!(graph.get_nodes().count(), 1);
         assert_eq!(graph.get_edges().count(), 0);
@@ -42,7 +48,7 @@ mod tests {
 
     #[test]
     fn test_build_graph_multiple_nodes_no_edges() {
-        let graph = build_graph(vec![1, 2, 3], vec![]);
+        let graph = build_graph::<Node, Edge>(vec![1, 2, 3], vec![]);
 
         assert_eq!(graph.get_nodes().count(), 3);
         assert_eq!(graph.get_edges().count(), 0);
@@ -53,7 +59,7 @@ mod tests {
 
     #[test]
     fn test_build_graph_with_edges() {
-        let graph = build_graph(vec![1, 2, 3], vec![(1, 2), (2, 3)]);
+        let graph = build_graph::<Node, Edge>(vec![1, 2, 3], vec![(1, 2), (2, 3)]);
 
         assert_eq!(graph.get_nodes().count(), 3);
         assert_eq!(graph.get_edges().count(), 2);
@@ -71,7 +77,7 @@ mod tests {
 
     #[test]
     fn test_build_graph_node_connections() {
-        let graph = build_graph(vec![1, 2, 3], vec![(1, 2), (2, 3), (3, 1)]);
+        let graph = build_graph::<Node, Edge>(vec![1, 2, 3], vec![(1, 2), (2, 3), (3, 1)]);
 
         // Check node 1: successor=2, predecessor=3
         let node1 = graph.get_node(1);
@@ -93,7 +99,7 @@ mod tests {
 
     #[test]
     fn test_build_graph_multiple_edges_same_node() {
-        let graph = build_graph(vec![1, 2, 3], vec![(1, 2), (1, 3)]);
+        let graph = build_graph::<Node, Edge>(vec![1, 2, 3], vec![(1, 2), (1, 3)]);
 
         let node1 = graph.get_node(1);
         assert_eq!(node1.successors().len(), 2);
@@ -112,7 +118,7 @@ mod tests {
 
     #[test]
     fn test_build_graph_with_self_loop() {
-        let graph = build_graph(vec![1, 2], vec![(1, 1), (1, 2)]);
+        let graph = build_graph::<Node, Edge>(vec![1, 2], vec![(1, 1), (1, 2)]);
 
         assert_eq!(graph.get_nodes().count(), 2);
         assert_eq!(graph.get_edges().count(), 2);
@@ -130,7 +136,7 @@ mod tests {
     #[test]
     fn test_build_graph_large_keys() {
         let large_key = u32::MAX - 1;
-        let graph = build_graph(vec![0, large_key], vec![(0, large_key)]);
+        let graph = build_graph::<Node, Edge>(vec![0, large_key], vec![(0, large_key)]);
 
         assert_eq!(graph.get_nodes().count(), 2);
         assert_eq!(graph.get_edges().count(), 1);
@@ -141,7 +147,7 @@ mod tests {
 
     #[test]
     fn test_build_complete_triangle() {
-        let graph = build_graph(
+        let graph = build_graph::<Node, Edge>(
             vec![1, 2, 3],
             vec![(1, 2), (2, 3), (3, 1), (1, 3), (3, 2), (2, 1)],
         );

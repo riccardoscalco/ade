@@ -542,7 +542,7 @@ mod tests {
 
         graph.add_node(Node::new(1));
         graph.add_node(Node::new(2));
-        graph.add_edge(Edge::new(1, 2));
+        graph.add_edge(<Edge as EdgeTrait>::new(1, 2));
 
         assert!(graph.get_node(2).predecessors().contains(&1));
     }

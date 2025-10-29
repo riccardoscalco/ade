@@ -82,7 +82,7 @@ fn components(rindex: &HashMap<u32, usize>) -> Vec<Vec<u32>> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use ade_graph::utils::build::build_graph;
+    use ade_graph::{implementations::{Edge, Node}, utils::build::build_graph};
     //use graph_generators::generate_random_graph_data;
 
     fn sort_components(components: &mut Vec<Vec<u32>>) {
@@ -94,7 +94,7 @@ mod tests {
 
     #[test]
     fn test_scc_1() {
-        let graph = build_graph(vec![1, 2, 3, 4], vec![(1, 2), (2, 3), (3, 1), (3, 4)]);
+        let graph = build_graph::<Node, Edge>(vec![1, 2, 3, 4], vec![(1, 2), (2, 3), (3, 1), (3, 4)]);
         let components = scc(&graph);
         assert_eq!(components.len(), 2);
         // Test that there are components [1, 2, 3] and [4]
@@ -106,21 +106,21 @@ mod tests {
 
     #[test]
     fn test_scc_2() {
-        let graph = build_graph(vec![1, 2, 3, 4], vec![(1, 2), (2, 3), (3, 4)]);
+        let graph = build_graph::<Node, Edge>(vec![1, 2, 3, 4], vec![(1, 2), (2, 3), (3, 4)]);
         let components = scc(&graph);
         assert_eq!(components.len(), 4);
     }
 
     #[test]
     fn test_scc_3() {
-        let graph = build_graph(vec![1, 2, 3, 4], vec![(1, 2), (2, 3), (3, 4), (4, 1)]);
+        let graph = build_graph::<Node, Edge>(vec![1, 2, 3, 4], vec![(1, 2), (2, 3), (3, 4), (4, 1)]);
         let components = scc(&graph);
         assert_eq!(components.len(), 1);
     }
 
     #[test]
     fn test_scc_4() {
-        let graph = build_graph(vec![1, 2, 3, 4], vec![(1, 2), (2, 3), (3, 4), (4, 3)]);
+        let graph = build_graph::<Node, Edge>(vec![1, 2, 3, 4], vec![(1, 2), (2, 3), (3, 4), (4, 3)]);
         let components = scc(&graph);
         assert_eq!(components.len(), 3);
         // Test that there are components [1], [2] and [3, 4]
@@ -133,7 +133,7 @@ mod tests {
 
     #[test]
     fn test_scc_5() {
-        let graph = build_graph(
+        let graph = build_graph::<Node, Edge>(
             vec![0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
             vec![
                 (0, 1),

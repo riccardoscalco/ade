@@ -161,7 +161,7 @@ mod tests {
     use super::*;
     use crate::scc;
     use ade_common::{self, assert_panics_with};
-    use ade_graph::utils::build::build_graph;
+    use ade_graph::{implementations::{Edge, Node}, utils::build::build_graph};
     use ade_graph_generators::generate_random_graph_data;
 
     fn sort_components(components: &mut Vec<Vec<u32>>) {
@@ -173,7 +173,7 @@ mod tests {
 
     #[test]
     fn test_scc_iterative_5() {
-        let graph = build_graph(
+        let graph = build_graph::<Node, Edge>(
             vec![0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
             vec![
                 (0, 1),
@@ -200,7 +200,7 @@ mod tests {
 
     #[test]
     fn test_scc_iterative_6() {
-        let graph = build_graph(
+        let graph = build_graph::<Node, Edge>(
             vec![0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
             vec![
                 (1, 0),
@@ -241,7 +241,7 @@ mod tests {
     #[test]
     fn test_scc_on_random_graph() {
         let (nodes, edges) = generate_random_graph_data(10000, 20000, 123);
-        let graph = build_graph(nodes, edges);
+        let graph = build_graph::<Node, Edge>(nodes, edges);
 
         let mut components = scc(&graph);
         sort_components(&mut components);
@@ -306,7 +306,7 @@ mod tests {
 
         for &(nodes_count, edges_count, seed) in &graph_sizes {
             let (nodes, edges) = generate_random_graph_data(nodes_count, edges_count, seed);
-            let graph = build_graph(nodes, edges);
+            let graph = build_graph::<Node, Edge>(nodes, edges);
 
             let mut components = scc(&graph);
             sort_components(&mut components);
@@ -334,7 +334,7 @@ mod tests {
             let seed = rng.gen();
 
             let (nodes, edges) = generate_random_graph_data(nodes_count, edges_count, seed);
-            let graph = build_graph(nodes, edges);
+            let graph = build_graph::<Node, Edge>(nodes, edges);
 
             let mut components = scc(&graph);
             sort_components(&mut components);
@@ -354,7 +354,7 @@ mod tests {
     fn test_scc_iterative_non_sequential_keys() {
         use ade_common::assert_panics_with;
 
-        let graph = build_graph(vec![1, 3, 5], vec![(1, 3), (3, 5), (5, 1)]);
+        let graph = build_graph::<Node, Edge>(vec![1, 3, 5], vec![(1, 3), (3, 5), (5, 1)]);
         assert_panics_with!(scc_iterative(&graph), ade_common::INVALID_KEY_SEQUENCE);
     }
 }
