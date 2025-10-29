@@ -1,5 +1,53 @@
 use ade_traits::EdgeTrait;
 
+/// A lightweight directed edge implementation connecting two nodes in a graph.
+///
+/// `Edge` is a concrete implementation of the [`EdgeTrait`] that stores only the source
+/// and target node keys. It represents a directed connection from a source node to a target
+/// node in a directed graph.
+///
+/// # Memory Efficiency
+///
+/// This implementation uses only 8 bytes (two `u32` values), making it very memory-efficient
+/// for graphs with many edges.
+///
+/// # Examples
+///
+/// Creating and using edges:
+///
+/// ```
+/// use ade_graph::implementations::Edge;
+/// use ade_traits::EdgeTrait;
+///
+/// // Create a directed edge from node 1 to node 2
+/// let edge = Edge::new(1, 2);
+/// assert_eq!(edge.source(), 1);
+/// assert_eq!(edge.target(), 2);
+/// assert_eq!(edge.key(), (1, 2));
+/// ```
+///
+/// Edges are directional:
+///
+/// ```
+/// use ade_graph::implementations::Edge;
+/// use ade_traits::EdgeTrait;
+///
+/// let edge_1_to_2 = Edge::new(1, 2);
+/// let edge_2_to_1 = Edge::new(2, 1);
+///
+/// // Different directions means different edges
+/// assert_ne!(edge_1_to_2.key(), edge_2_to_1.key());
+/// ```
+///
+/// Self-loops are supported:
+///
+/// ```
+/// use ade_graph::implementations::Edge;
+/// use ade_traits::EdgeTrait;
+///
+/// let self_loop = Edge::new(5, 5);
+/// assert_eq!(self_loop.source(), self_loop.target());
+/// ```
 #[derive(Debug, Clone)]
 pub struct Edge {
     source: u32,
@@ -7,14 +55,49 @@ pub struct Edge {
 }
 
 impl Edge {
+    /// Creates a new directed edge from a source node to a target node.
+    ///
+    /// # Parameters
+    ///
+    /// * `source` - The key of the source node where the edge originates
+    /// * `target` - The key of the target node where the edge points to
+    ///
+    /// # Returns
+    ///
+    /// A new `Edge` instance representing a directed connection from `source` to `target`.
+    ///
+    /// # Examples
+    ///
+    /// Creating a simple edge:
+    ///
+    /// ```
+    /// use ade_graph::implementations::Edge;
+    ///
+    /// let edge = Edge::new(1, 2);
+    /// ```
+    ///
+    /// Creating a self-loop:
+    ///
+    /// ```
+    /// use ade_graph::implementations::Edge;
+    ///
+    /// // Self-loops are valid
+    /// let self_loop = Edge::new(5, 5);
+    /// ```
+    ///
+    /// # Note
+    ///
+    /// This constructor does not validate whether the source and target nodes actually exist
+    /// in any graph. It simply creates the edge data structure. Validation typically occurs
+    /// when adding the edge to a graph.
     pub fn new(source: u32, target: u32) -> Self {
-        Edge { source, target }
+        Self { source, target }
     }
 }
 
 impl EdgeTrait for Edge {
     fn new(source: u32, target: u32) -> Self {
-        Edge { source, target }
+        Edge::new(source, target)
     }
 
     fn source(&self) -> u32 {
