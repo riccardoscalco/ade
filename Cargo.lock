@@ -26,6 +26,7 @@ dependencies = [
 name = "ade-graph"
 version = "0.1.1"
 dependencies = [
+ "ade-common",
  "ade-traits",
  "fixedbitset 0.4.2",
 ]
@@ -63,6 +64,7 @@ dependencies = [
 name = "ade-traits"
 version = "0.1.0"
 dependencies = [
+ "ade-common",
  "ade-graph",
 ]
 

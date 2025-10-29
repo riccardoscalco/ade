@@ -1,6 +1,7 @@
 use crate::implementations::Graph;
 use ade_traits::{EdgeTrait, GraphViewTrait, NodeTrait};
 use fixedbitset::FixedBitSet;
+use ade_common::INVALID_KEY_SEQUENCE;
 
 pub struct FilteredGraph<'a, N: NodeTrait, E: EdgeTrait> {
     base: &'a Graph<N, E>,
@@ -9,6 +10,11 @@ pub struct FilteredGraph<'a, N: NodeTrait, E: EdgeTrait> {
 
 impl<'a, N: NodeTrait, E: EdgeTrait> FilteredGraph<'a, N, E> {
     pub fn new(base: &'a Graph<N, E>, active_nodes: impl IntoIterator<Item = u32>) -> Self {
+        // Panic if the graph does not have sequential keys
+        if !base.has_sequential_keys() {
+            panic!("{}", INVALID_KEY_SEQUENCE);
+        }
+
         let node_count = base.get_node_keys().count();
 
         // Assume normalized keys: 0, 1, 2, ..., n-1
@@ -130,6 +136,11 @@ impl<N: NodeTrait, E: EdgeTrait> GraphViewTrait<N, E> for FilteredGraph<'_, N, E
     }
 
     fn filter(&self, node_keys: &[u32]) -> impl GraphViewTrait<N, E> {
+        // Panic if the base graph does not have sequential keys
+        if !self.base.has_sequential_keys() {
+            panic!("{}", ade_common::INVALID_KEY_SEQUENCE);
+        }
+        
         // Intersect the requested nodes with the currently active ones
         let filtered_keys = node_keys.iter().copied().filter(|&key| self.is_active(key));
 

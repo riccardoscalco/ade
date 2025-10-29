@@ -9,5 +9,8 @@ homepage = "https://github.com/riccardoscalco/ade"
 keywords = ["graph", "traits", "interfaces", "common", "directed"]
 categories = []
 
+[dependencies]
+ade-common = { path = "../ade-common" }
+
 [dev-dependencies]
 ade-graph = { path = "../ade-graph" }

@@ -439,6 +439,10 @@ impl<N: NodeTrait, E: EdgeTrait> GraphViewTrait<N, E> for Graph<N, E> {
     }
 
     fn filter(&self, node_keys: &[u32]) -> impl GraphViewTrait<N, E> {
+        // Panic if the graph does not have sequential keys
+        if !self.has_sequential_keys() {
+            panic!("{}", ade_common::INVALID_KEY_SEQUENCE);
+        }
         FilteredGraph::new(self, node_keys.iter().copied())
     }
 }
@@ -472,6 +476,7 @@ mod tests {
     use super::*;
     use crate::implementations::edge::Edge;
     use crate::implementations::node::Node;
+    use ade_common::assert_panics_with;
 
     #[test]
     fn test_is_empty() {
@@ -789,39 +794,64 @@ mod tests {
     fn test_filter() {
         let mut graph = Graph::<Node, Edge>::new(Vec::new(), Vec::new());
 
+        graph.add_node(Node::new(0));
         graph.add_node(Node::new(1));
         graph.add_node(Node::new(2));
-        graph.add_node(Node::new(3));
 
-        graph.add_edge(Edge::new(1, 2));
-        graph.add_edge(Edge::new(1, 3));
+        graph.add_edge(Edge::new(0, 1));
+        graph.add_edge(Edge::new(0, 2));
+
+        // Verify graph has sequential keys
+        assert!(graph.has_sequential_keys());
 
         // 2 nodes and 1 edge
-        let subgraph1 = graph.filter(&[1, 2]);
+        let subgraph1 = graph.filter(&[0, 1]);
         assert_eq!(subgraph1.get_nodes().count(), 2);
+        assert!(subgraph1.has_node(0));
         assert!(subgraph1.has_node(1));
-        assert!(subgraph1.has_node(2));
-        assert!(!subgraph1.has_node(3));
-        assert!(subgraph1.has_edge(1, 2));
-        assert!(!subgraph1.has_edge(1, 3));
+        assert!(!subgraph1.has_node(2));
+        assert!(subgraph1.has_edge(0, 1));
+        assert!(!subgraph1.has_edge(0, 2));
 
         // 1 node and 0 edges
-        let subgraph2 = graph.filter(&[1]);
+        let subgraph2 = graph.filter(&[0]);
         assert_eq!(subgraph2.get_nodes().count(), 1);
-        assert!(subgraph2.has_node(1));
+        assert!(subgraph2.has_node(0));
+        assert!(!subgraph2.has_node(1));
         assert!(!subgraph2.has_node(2));
-        assert!(!subgraph2.has_node(3));
-        assert!(!subgraph2.has_edge(1, 2));
-        assert!(!subgraph2.has_edge(1, 3));
+        assert!(!subgraph2.has_edge(0, 1));
+        assert!(!subgraph2.has_edge(0, 2));
 
-        // 0 nodes and 0 edges (node 4 doesn't exist)
-        let subgraph3 = graph.filter(&[4]);
+        // 0 nodes and 0 edges (node 3 doesn't exist)
+        let subgraph3 = graph.filter(&[3]);
         assert_eq!(subgraph3.get_nodes().count(), 0);
+        assert!(!subgraph3.has_node(0));
         assert!(!subgraph3.has_node(1));
         assert!(!subgraph3.has_node(2));
-        assert!(!subgraph3.has_node(3));
-        assert!(!subgraph3.has_edge(1, 2));
-        assert!(!subgraph3.has_edge(1, 3));
+        assert!(!subgraph3.has_edge(0, 1));
+        assert!(!subgraph3.has_edge(0, 2));
+    }
+
+    #[test]
+    fn test_filter_non_sequential_keys() {
+        let mut graph = Graph::<Node, Edge>::new(Vec::new(), Vec::new());
+
+        // Add nodes with non-sequential keys (1, 3, 5)
+        graph.add_node(Node::new(1));
+        graph.add_node(Node::new(3));
+        graph.add_node(Node::new(5));
+
+        graph.add_edge(Edge::new(1, 3));
+        graph.add_edge(Edge::new(3, 5));
+
+        // Verify graph does NOT have sequential keys
+        assert!(!graph.has_sequential_keys());
+
+        // Attempting to filter should panic
+        assert_panics_with!(
+            graph.filter(&[1, 3]),
+            ade_common::INVALID_KEY_SEQUENCE
+        );
     }
 
     #[test]

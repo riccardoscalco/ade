@@ -368,6 +368,11 @@ pub trait GraphViewTrait<N: NodeTrait, E: EdgeTrait> {
     ///
     /// A new graph view containing only the specified nodes and edges between them.
     ///
+    /// # Requirements
+    ///
+    /// **The base graph must have sequential keys starting from 0** (i.e., 0, 1, 2, 3, ..., n-1).
+    /// If the graph has non-sequential keys, the behavior is undefined and will panic with [`INVALID_KEY_SEQUENCE`][ade_common::INVALID_KEY_SEQUENCE].
+    ///
     /// # Examples
     ///
     /// ```
@@ -375,24 +380,27 @@ pub trait GraphViewTrait<N: NodeTrait, E: EdgeTrait> {
     /// use ade_traits::GraphViewTrait;
     ///
     /// let graph = Graph::new(
-    ///     vec![Node::new(1), Node::new(2), Node::new(3), Node::new(4)],
-    ///     vec![Edge::new(1, 2), Edge::new(2, 3), Edge::new(3, 4), Edge::new(1, 4)],
+    ///     vec![Node::new(0), Node::new(1), Node::new(2), Node::new(3)],
+    ///     vec![Edge::new(0, 1), Edge::new(1, 2), Edge::new(2, 3), Edge::new(0, 3)],
     /// );
     ///
-    /// // Create a filtered view with only nodes 1, 2, and 3
-    /// let filtered = graph.filter(&[1, 2, 3]);
+    /// // Verify the graph has sequential keys (required for filter)
+    /// assert!(graph.has_sequential_keys());
+    ///
+    /// // Create a filtered view with only nodes 0, 1, and 2
+    /// let filtered = graph.filter(&[0, 1, 2]);
     ///
     /// assert_eq!(filtered.get_nodes().count(), 3);
+    /// assert!(filtered.has_node(0));
     /// assert!(filtered.has_node(1));
     /// assert!(filtered.has_node(2));
-    /// assert!(filtered.has_node(3));
-    /// assert!(!filtered.has_node(4));
+    /// assert!(!filtered.has_node(3));
     ///
-    /// // Edge (1,2) and (2,3) are included, but (3,4) and (1,4) are excluded
+    /// // Edge (0,1) and (1,2) are included, but (2,3) and (0,3) are excluded
+    /// assert!(filtered.has_edge(0, 1));
     /// assert!(filtered.has_edge(1, 2));
-    /// assert!(filtered.has_edge(2, 3));
-    /// assert!(!filtered.has_edge(3, 4));
-    /// assert!(!filtered.has_edge(1, 4));
+    /// assert!(!filtered.has_edge(2, 3));
+    /// assert!(!filtered.has_edge(0, 3));
     /// ```
     fn filter(&self, node_keys: &[u32]) -> impl GraphViewTrait<N, E>;
 
