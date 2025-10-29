@@ -3,12 +3,195 @@ use ade_traits::{EdgeTrait, GraphViewTrait, NodeTrait};
 use fixedbitset::FixedBitSet;
 use ade_common::INVALID_KEY_SEQUENCE;
 
+/// A filtered view of a graph that only exposes a subset of nodes and their edges.
+///
+/// `FilteredGraph` provides a memory-efficient way to work with subsets of a graph
+/// without copying the underlying data. It maintains a bitset to track which nodes
+/// are "active" (visible) in the filtered view, while borrowing the original graph data.
+///
+/// # Features
+///
+/// - **Zero-copy filtering** - references the base graph without duplicating data
+/// - **O(1) membership checks** using a bitset for active nodes
+/// - **Automatic edge filtering** - only edges between active nodes are visible
+/// - **Composable filtering** - can create filtered views of filtered views
+///
+/// # Requirements
+///
+/// The base graph **must have sequential keys** (0, 1, 2, ..., n-1) to use filtering.
+/// This requirement allows efficient bitset-based lookups. Attempting to filter a graph
+/// with non-sequential keys will panic.
+///
+/// # Type Parameters
+///
+/// * `'a` - Lifetime of the borrowed base graph
+/// * `N` - Node type implementing [`NodeTrait`]
+/// * `E` - Edge type implementing [`EdgeTrait`]
+///
+/// # Examples
+///
+/// Creating a filtered subgraph:
+///
+/// ```
+/// use ade_graph::implementations::{Graph, Node, Edge, FilteredGraph};
+/// use ade_graph::GraphViewTrait;
+///
+/// // Create a graph with sequential keys (0, 1, 2)
+/// let mut graph = Graph::<Node, Edge>::new(vec![], vec![]);
+/// graph.add_node(Node::new(0));
+/// graph.add_node(Node::new(1));
+/// graph.add_node(Node::new(2));
+/// graph.add_edge(Edge::new(0, 1));
+/// graph.add_edge(Edge::new(1, 2));
+///
+/// // Create a filtered view with only nodes 0 and 1
+/// let filtered = FilteredGraph::new(&graph, vec![0, 1]);
+///
+/// assert_eq!(filtered.get_nodes().count(), 2);
+/// assert!(filtered.has_node(0));
+/// assert!(filtered.has_node(1));
+/// assert!(!filtered.has_node(2));
+/// assert!(filtered.has_edge(0, 1));
+/// assert!(!filtered.has_edge(1, 2)); // Edge to inactive node is hidden
+/// ```
+///
+/// Filtering with the `filter` method:
+///
+/// ```
+/// use ade_graph::implementations::{Graph, Node, Edge};
+/// use ade_graph::GraphViewTrait;
+///
+/// let mut graph = Graph::<Node, Edge>::new(vec![], vec![]);
+/// for i in 0..5 {
+///     graph.add_node(Node::new(i));
+/// }
+/// graph.add_edge(Edge::new(0, 1));
+/// graph.add_edge(Edge::new(1, 2));
+/// graph.add_edge(Edge::new(2, 3));
+/// graph.add_edge(Edge::new(3, 4));
+///
+/// // Create a filtered view using the filter method
+/// let subgraph = graph.filter(&[1, 2, 3]);
+///
+/// assert_eq!(subgraph.get_nodes().count(), 3);
+/// assert!(subgraph.has_edge(1, 2));
+/// assert!(subgraph.has_edge(2, 3));
+/// assert!(!subgraph.has_edge(0, 1)); // Edge from inactive node
+/// ```
+///
+/// Composing filters:
+///
+/// ```
+/// use ade_graph::implementations::{Graph, Node, Edge};
+/// use ade_graph::GraphViewTrait;
+///
+/// let mut graph = Graph::<Node, Edge>::new(vec![], vec![]);
+/// for i in 0..5 {
+///     graph.add_node(Node::new(i));
+/// }
+///
+/// // First filter: nodes 0, 1, 2, 3
+/// let first_filter = graph.filter(&[0, 1, 2, 3]);
+///
+/// // Second filter on top of the first: nodes 1, 2
+/// let second_filter = first_filter.filter(&[1, 2]);
+///
+/// assert_eq!(second_filter.get_nodes().count(), 2);
+/// assert!(second_filter.has_node(1));
+/// assert!(second_filter.has_node(2));
+/// assert!(!second_filter.has_node(0));
+/// ```
 pub struct FilteredGraph<'a, N: NodeTrait, E: EdgeTrait> {
     base: &'a Graph<N, E>,
     active: FixedBitSet,
 }
 
 impl<'a, N: NodeTrait, E: EdgeTrait> FilteredGraph<'a, N, E> {
+    /// Creates a new filtered view of a graph with only the specified nodes active.
+    ///
+    /// This method creates a lightweight view over the base graph that only exposes
+    /// the nodes specified in `active_nodes` and edges between those nodes. The base
+    /// graph data is borrowed, not copied, making this operation very efficient.
+    ///
+    /// Node keys that don't exist in the base graph or are outside the valid range
+    /// are silently ignored.
+    ///
+    /// # Arguments
+    ///
+    /// * `base` - A reference to the base graph to filter
+    /// * `active_nodes` - An iterator of node keys to include in the filtered view
+    ///
+    /// # Returns
+    ///
+    /// A new `FilteredGraph` instance that provides a filtered view of the base graph.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the base graph does not have sequential keys (0, 1, 2, ..., n-1).
+    /// Sequential keys are required for the efficient bitset-based filtering mechanism.
+    ///
+    /// # Examples
+    ///
+    /// Basic filtering:
+    ///
+    /// ```
+    /// use ade_graph::implementations::{Graph, Node, Edge, FilteredGraph};
+    /// use ade_graph::GraphViewTrait;
+    ///
+    /// let mut graph = Graph::<Node, Edge>::new(vec![], vec![]);
+    /// graph.add_node(Node::new(0));
+    /// graph.add_node(Node::new(1));
+    /// graph.add_node(Node::new(2));
+    /// graph.add_edge(Edge::new(0, 1));
+    /// graph.add_edge(Edge::new(1, 2));
+    ///
+    /// // Filter to only include nodes 0 and 2
+    /// let filtered = FilteredGraph::new(&graph, vec![0, 2]);
+    ///
+    /// assert_eq!(filtered.get_nodes().count(), 2);
+    /// assert!(filtered.has_node(0));
+    /// assert!(!filtered.has_node(1));
+    /// assert!(filtered.has_node(2));
+    /// ```
+    ///
+    /// Invalid keys are silently ignored:
+    ///
+    /// ```
+    /// use ade_graph::implementations::{Graph, Node, Edge, FilteredGraph};
+    /// use ade_graph::GraphViewTrait;
+    ///
+    /// let mut graph = Graph::<Node, Edge>::new(vec![], vec![]);
+    /// graph.add_node(Node::new(0));
+    /// graph.add_node(Node::new(1));
+    ///
+    /// // Node 10 doesn't exist, but this doesn't panic
+    /// let filtered = FilteredGraph::new(&graph, vec![0, 10]);
+    ///
+    /// assert_eq!(filtered.get_nodes().count(), 1);
+    /// assert!(filtered.has_node(0));
+    /// assert!(!filtered.has_node(10));
+    /// ```
+    ///
+    /// Using an iterator as input:
+    ///
+    /// ```
+    /// use ade_graph::implementations::{Graph, Node, Edge, FilteredGraph};
+    /// use ade_graph::GraphViewTrait;
+    ///
+    /// let mut graph = Graph::<Node, Edge>::new(vec![], vec![]);
+    /// for i in 0..10 {
+    ///     graph.add_node(Node::new(i));
+    /// }
+    ///
+    /// // Filter to even-numbered nodes using an iterator
+    /// let filtered = FilteredGraph::new(&graph, (0..10).filter(|x| x % 2 == 0));
+    ///
+    /// assert_eq!(filtered.get_nodes().count(), 5);
+    /// assert!(filtered.has_node(0));
+    /// assert!(filtered.has_node(2));
+    /// assert!(!filtered.has_node(1));
+    /// assert!(!filtered.has_node(3));
+    /// ```
     pub fn new(base: &'a Graph<N, E>, active_nodes: impl IntoIterator<Item = u32>) -> Self {
         // Panic if the graph does not have sequential keys
         if !base.has_sequential_keys() {
@@ -28,6 +211,38 @@ impl<'a, N: NodeTrait, E: EdgeTrait> FilteredGraph<'a, N, E> {
         Self { base, active }
     }
 
+    /// Checks if a node is active (visible) in the filtered view.
+    ///
+    /// This is an internal helper method that performs an O(1) lookup in the bitset
+    /// to determine if a node with the given key is included in the filtered view.
+    ///
+    /// # Arguments
+    ///
+    /// * `key` - The key of the node to check
+    ///
+    /// # Returns
+    ///
+    /// * `true` - If the node is active in this filtered view
+    /// * `false` - If the node is not active (filtered out) or doesn't exist
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use ade_graph::implementations::{Graph, Node, Edge, FilteredGraph};
+    /// use ade_graph::GraphViewTrait;
+    ///
+    /// let mut graph = Graph::<Node, Edge>::new(vec![], vec![]);
+    /// graph.add_node(Node::new(0));
+    /// graph.add_node(Node::new(1));
+    /// graph.add_node(Node::new(2));
+    ///
+    /// let filtered = FilteredGraph::new(&graph, vec![0, 2]);
+    ///
+    /// // is_active is private, but you can use has_node which calls it
+    /// assert!(filtered.has_node(0));  // active
+    /// assert!(!filtered.has_node(1)); // not active
+    /// assert!(filtered.has_node(2));  // active
+    /// ```
     fn is_active(&self, key: u32) -> bool {
         self.active.contains(key as usize)
     }
