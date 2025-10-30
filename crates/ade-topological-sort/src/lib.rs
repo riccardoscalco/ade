@@ -5,6 +5,102 @@ use fixedbitset::FixedBitSet;
 
 pub const CYCLE_ERROR_MSG: &str = "Graph contains a cycle";
 
+/// Performs a topological sort on a directed acyclic graph (DAG).
+///
+/// A topological sort is a linear ordering of nodes such that for every directed edge
+/// from node `u` to node `v`, `u` comes before `v` in the ordering. This is only possible
+/// if the graph is acyclic (contains no cycles).
+///
+/// When multiple valid topological orderings exist, the optional `key_fn` parameter can be
+/// used to determine a consistent ordering based on a comparison key.
+///
+/// # Type Parameters
+///
+/// * `N` - The node type, which must implement [`NodeTrait`]
+/// * `E` - The edge type, which must implement [`EdgeTrait`]
+/// * `K` - The type of the comparison key, which must implement [`Ord`]
+/// * `F` - A function that extracts a comparison key from a node
+///
+/// # Parameters
+///
+/// * `graph` - A reference to a graph that implements [`GraphViewTrait`]
+/// * `key_fn` - An optional function to determine ordering when multiple valid topological
+///              orderings exist. Nodes will be processed in descending order of their keys.
+///
+/// # Returns
+///
+/// Returns `Ok(Vec<u32>)` containing the node keys in topological order, or
+/// `Err(String)` if the graph contains a cycle.
+///
+/// # Panics
+///
+/// Panics if the graph does not have sequential keys starting from 0.
+/// Use [`has_sequential_keys`](GraphViewTrait::has_sequential_keys) to verify this requirement.
+///
+/// # Errors
+///
+/// Returns an error with message [`CYCLE_ERROR_MSG`] if the graph contains a cycle.
+/// A cycle makes topological sorting impossible since there would be no valid linear ordering.
+///
+/// # Examples
+///
+/// Basic topological sort without a key function:
+///
+/// ```
+/// use ade_topological_sort::topological_sort;
+/// use ade_graph::implementations::{Graph, Node, Edge};
+/// use ade_traits::NodeTrait;
+///
+/// // Create a simple DAG: 0 -> 1 -> 2
+/// let graph = Graph::new(
+///     vec![Node::new(0), Node::new(1), Node::new(2)],
+///     vec![Edge::new(0, 1), Edge::new(1, 2)],
+/// );
+///
+/// let sorted = topological_sort::<Node, Edge, u32, fn(&Node) -> u32>(&graph, None).unwrap();
+/// assert_eq!(sorted, vec![0, 1, 2]);
+/// ```
+///
+/// Using a key function to control ordering:
+///
+/// ```
+/// use ade_topological_sort::topological_sort;
+/// use ade_graph::implementations::{Graph, Node, Edge};
+/// use ade_traits::NodeTrait;
+///
+/// // Create a graph with multiple valid orderings: 0 -> 2, 1 -> 2
+/// let graph = Graph::new(
+///     vec![Node::new(0), Node::new(1), Node::new(2)],
+///     vec![Edge::new(0, 2), Edge::new(1, 2)],
+/// );
+///
+/// // Sort in ascending order of node keys
+/// let sort_fn = |n: &Node| n.key();
+/// let sorted = topological_sort(&graph, Some(sort_fn)).unwrap();
+/// assert_eq!(sorted, vec![0, 1, 2]);
+///
+/// // Sort in descending order of node keys
+/// let reverse_sort_fn = |n: &Node| -(n.key() as i32);
+/// let sorted = topological_sort(&graph, Some(reverse_sort_fn)).unwrap();
+/// assert_eq!(sorted, vec![1, 0, 2]);
+/// ```
+///
+/// Detecting cycles:
+///
+/// ```
+/// use ade_topological_sort::{topological_sort, CYCLE_ERROR_MSG};
+/// use ade_graph::implementations::{Graph, Node, Edge};
+///
+/// // Create a graph with a cycle: 0 -> 1 -> 0
+/// let graph = Graph::new(
+///     vec![Node::new(0), Node::new(1)],
+///     vec![Edge::new(0, 1), Edge::new(1, 0)],
+/// );
+///
+/// let result = topological_sort::<Node, Edge, u32, fn(&Node) -> u32>(&graph, None);
+/// assert!(result.is_err());
+/// assert_eq!(result.unwrap_err(), CYCLE_ERROR_MSG);
+/// ```
 pub fn topological_sort<N, E, K, F>(
     graph: &impl GraphViewTrait<N, E>,
     key_fn: Option<F>,
@@ -31,18 +127,9 @@ where
     {
         match key_fn {
             Some(f) => {
-                // Sort nodes by key in descending order
                 nodes.sort_by_key(|n| Reverse(f(n)));
-
-                // for node in nodes {
-                //     dfs(node.key(), graph, visiting, visited, result, key_fn)?;
-                // }
             }
-            None => {
-                // for node in nodes {
-                //     dfs(node.key(), graph, visiting, visited, result, key_fn)?;
-                // }
-            }
+            None => (),
         }
 
         for node in nodes {
