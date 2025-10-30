@@ -1,6 +1,9 @@
+use std::cmp::Reverse;
 use ade_common::INVALID_KEY_SEQUENCE;
 use ade_traits::{EdgeTrait, GraphViewTrait, NodeTrait};
 use fixedbitset::FixedBitSet;
+
+pub const CYCLE_ERROR_MSG: &str = "Graph contains a cycle";
 
 pub fn topological_sort<N, E, K, F>(
     graph: &impl GraphViewTrait<N, E>,
@@ -12,6 +15,43 @@ where
     K: Ord,
     F: Fn(&N) -> K,
 {
+    fn visit<N, E, K, F>(
+        mut nodes: Vec<&N>,
+        graph: &impl GraphViewTrait<N, E>,
+        visiting: &mut FixedBitSet,
+        visited: &mut FixedBitSet,
+        result: &mut Vec<u32>,
+        key_fn: &Option<F>,
+    ) -> Result<(), String>
+    where
+        N: NodeTrait,
+        E: EdgeTrait,
+        K: Ord,
+        F: Fn(&N) -> K,
+    {
+        match key_fn {
+            Some(f) => {
+                // Sort nodes by key in descending order
+                nodes.sort_by_key(|n| Reverse(f(n)));
+
+                // for node in nodes {
+                //     dfs(node.key(), graph, visiting, visited, result, key_fn)?;
+                // }
+            }
+            None => {
+                // for node in nodes {
+                //     dfs(node.key(), graph, visiting, visited, result, key_fn)?;
+                // }
+            }
+        }
+
+        for node in nodes {
+            dfs(node.key(), graph, visiting, visited, result, key_fn)?;
+        }
+
+        Ok(())
+    }
+
     fn dfs<N, E, K, F>(
         node_key: u32,
         graph: &impl GraphViewTrait<N, E>,
@@ -28,29 +68,17 @@ where
     {
         let idx = node_key as usize;
 
-        if visiting[idx] {
-            return Err("Graph contains a cycle".into());
-        }
         if visited[idx] {
             return Ok(());
         }
 
+        if visiting[idx] {
+            return Err(CYCLE_ERROR_MSG.into());
+        }
+
         visiting.set(idx, true);
 
-        match key_fn {
-            Some(f) => {
-                let mut successors = graph.get_successors(node_key).collect::<Vec<_>>();
-                successors.sort_by_key(|n| std::cmp::Reverse(f(n)));
-                for successor in successors {
-                    dfs(successor.key(), graph, visiting, visited, result, key_fn)?;
-                }
-            }
-            None => {
-                for successor_key in graph.get_successors_keys(node_key) {
-                    dfs(successor_key, graph, visiting, visited, result, key_fn)?;
-                }
-            }
-        }
+        visit(graph.get_successors(node_key).collect(), graph, visiting, visited, result, key_fn)?;
 
         visiting.set(idx, false);
         visited.set(idx, true);
@@ -63,45 +91,14 @@ where
         panic!("{}", INVALID_KEY_SEQUENCE);
     }
 
-    let node_count = graph.get_node_keys().count();
+    let node_count = graph.node_count();
+    let mut result = Vec::with_capacity(node_count);
+
+    // Initialize bit sets for visiting and visited nodes
     let mut visiting = FixedBitSet::with_capacity(node_count);
     let mut visited = FixedBitSet::with_capacity(node_count);
-    let mut result = Vec::new();
 
-    match &key_fn {
-        Some(f) => {
-            let mut nodes: Vec<_> = graph.get_nodes().collect();
-            nodes.sort_by_key(|n| std::cmp::Reverse(f(n)));
-            for node in nodes {
-                let idx = node.key() as usize;
-                if !visited[idx] {
-                    dfs(
-                        node.key(),
-                        graph,
-                        &mut visiting,
-                        &mut visited,
-                        &mut result,
-                        &key_fn,
-                    )?;
-                }
-            }
-        }
-        None => {
-            for node_key in graph.get_node_keys() {
-                let idx = node_key as usize;
-                if !visited[idx] {
-                    dfs(
-                        node_key,
-                        graph,
-                        &mut visiting,
-                        &mut visited,
-                        &mut result,
-                        &key_fn,
-                    )?;
-                }
-            }
-        }
-    }
+    visit(graph.get_nodes().collect(), graph, &mut visiting, &mut visited, &mut result, &key_fn)?;
 
     result.reverse();
     Ok(result)
@@ -154,50 +151,66 @@ mod tests {
 
         let result = topological_sort::<Node, Edge, u32, fn(&Node) -> u32>(&graph, None);
         assert!(result.is_err());
-        assert_eq!(result.unwrap_err(), "Graph contains a cycle");
+        assert_eq!(result.unwrap_err(), CYCLE_ERROR_MSG);
     }
 
     #[test]
     fn test_topological_sort_with_compare_by_key_1() {
         let graph1 = build_graph(vec![0, 1, 2], vec![(0, 1), (0, 2)]);
 
+        let sort_fn = |n: &Node| (n.key() as u32);
+        let reverse_sort_fn = |n: &Node| -(n.key() as i32);
+
         assert_eq!(
-            topological_sort::<Node, Edge, u32, _>(&graph1, Some(|n: &Node| (n.key() as u32)),)
-                .unwrap(),
+            topological_sort::<Node, Edge, u32, _>(
+                &graph1,
+                Some(sort_fn)
+            )
+            .unwrap(),
             vec![0, 1, 2]
         );
 
         assert_eq!(
-            topological_sort::<Node, Edge, i32, _>(&graph1, Some(|n: &Node| -(n.key() as i32)),)
-                .unwrap(),
+            topological_sort::<Node, Edge, i32, _>
+                (&graph1,
+                Some(reverse_sort_fn)
+            ).unwrap(),
             vec![0, 2, 1]
         );
 
         let graph2 = build_graph(vec![0, 1, 2], vec![(0, 2), (1, 2)]);
 
         assert_eq!(
-            topological_sort::<Node, Edge, u32, _>(&graph2, Some(|n: &Node| (n.key() as u32)),)
-                .unwrap(),
+            topological_sort::<Node, Edge, u32, _>(
+                &graph2,
+                Some(sort_fn)
+            ).unwrap(),
             vec![0, 1, 2]
         );
 
         assert_eq!(
-            topological_sort::<Node, Edge, i32, _>(&graph2, Some(|n: &Node| -(n.key() as i32)),)
-                .unwrap(),
+            topological_sort::<Node, Edge, i32, _>(
+                &graph2,
+                Some(reverse_sort_fn)
+            ).unwrap(),
             vec![1, 0, 2]
         );
 
         let graph3 = build_graph(vec![0, 1, 2, 3, 4], vec![(0, 1), (0, 4), (2, 4), (2, 3)]);
 
         assert_eq!(
-            topological_sort::<Node, Edge, u32, _>(&graph3, Some(|n: &Node| (n.key() as u32)),)
-                .unwrap(),
+            topological_sort::<Node, Edge, u32, _>(
+                &graph3,
+                Some(sort_fn)
+            ).unwrap(),
             vec![0, 1, 2, 3, 4]
         );
 
         assert_eq!(
-            topological_sort::<Node, Edge, i32, _>(&graph3, Some(|n: &Node| -(n.key() as i32)),)
-                .unwrap(),
+            topological_sort::<Node, Edge, i32, _>(
+                &graph3,
+                Some(reverse_sort_fn)
+            ).unwrap(),
             vec![2, 3, 0, 4, 1]
         );
     }
@@ -206,7 +219,20 @@ mod tests {
     fn test_topological_sort_random_graph() {
         let (nodes, edges) = generate_random_graph_data(20, 20, 3);
         let graph = build_graph(nodes, edges);
-        let sorting = topological_sort::<Node, Edge, u32, fn(&Node) -> u32>(&graph, None);
+
+        let sort_fn = |n: &Node| (n.key() as u32);
+        let reverse_sort_fn = |n: &Node| -(n.key() as i32);
+        
+        let sorting = topological_sort::<Node, Edge, u32, _>(
+            &graph,
+            Some(sort_fn)
+        );
+        assert!(sorting.is_ok());
+
+        let sorting = topological_sort::<Node, Edge, i32, _>(
+            &graph,
+            Some(reverse_sort_fn)
+        );
         assert!(sorting.is_ok());
     }
 }
