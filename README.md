@@ -4,6 +4,9 @@
 # Test all crates
 cargo test --workspace
 
+# or with nextest if available
+cargo nextest run
+
 # Test all crates in release mode
 cargo test --workspace --release
 
@@ -45,7 +48,6 @@ cargo bench --bench ade_elementary_circuits_bench -- --save-baseline before_opti
 # Compare with baseline
 cargo bench --bench ade_elementary_circuits_bench -- --baseline before_optimization
 ```
-
 
 ## TODO
 

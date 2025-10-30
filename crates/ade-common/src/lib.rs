@@ -30,7 +30,15 @@ pub const INVALID_KEY_SEQUENCE: &str =
 #[macro_export]
 macro_rules! assert_panics_with {
     ($expr:expr, $expected:expr $(,)?) => {{
+        // Save the current hook and set an empty hook to silence the output
+        let old_hook = std::panic::take_hook();
+        std::panic::set_hook(Box::new(|_| {}));
+        
         let res = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| $expr));
+        
+        // Restore the original hook
+        std::panic::set_hook(old_hook);
+        
         match res {
             Ok(_) => panic!(
                 "expected panic with {:?}, but code did not panic",
