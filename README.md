@@ -48,7 +48,3 @@ cargo bench --bench ade_elementary_circuits_bench -- --save-baseline before_opti
 # Compare with baseline
 cargo bench --bench ade_elementary_circuits_bench -- --baseline before_optimization
 ```
-
-## TODO
-
-- [ ] Iterative scc algorithm

@@ -27,9 +27,118 @@ impl SccState {
     }
 }
 
-// D.J. Pearce's algorithm for finding strongly connected components (SCCs).
-// Information Processing Letters 116 (2016) 47-52
-// Iterative implementation.
+/// Finds all strongly connected components (SCCs) in a directed graph using an iterative approach.
+///
+/// This function implements D.J. Pearce's algorithm for finding strongly connected components,
+/// as described in "An Improved Algorithm for Finding the Strongly Connected Components of a
+/// Directed Graph" (Information Processing Letters 116, 2016, 47-52). This is the iterative
+/// implementation of the algorithm.
+///
+/// A strongly connected component is a maximal set of vertices where every vertex is reachable
+/// from every other vertex in the set. This iterative implementation uses explicit stacks to
+/// simulate the recursive behavior.
+///
+/// # Type Parameters
+///
+/// * `N` - The node type, which must implement [`NodeTrait`]
+/// * `E` - The edge type, which must implement [`EdgeTrait`]
+///
+/// # Parameters
+///
+/// * `graph` - A reference to any graph structure implementing [`GraphViewTrait`]
+///
+/// # Returns
+///
+/// A vector of strongly connected components, where each component is represented as a vector
+/// of node keys (`u32`). The order of components and the order of nodes within each component
+/// is not specified.
+///
+/// # Requirements
+///
+/// **The graph must have sequential keys starting from 0** (i.e., 0, 1, 2, 3, ..., n-1).
+/// If the graph has non-sequential keys, the function will panic with [`INVALID_KEY_SEQUENCE`].
+///
+/// Use [`has_sequential_keys`](GraphViewTrait::has_sequential_keys) to check if a graph
+/// meets this requirement before calling this function.
+///
+/// # Panics
+///
+/// Panics if the graph does not have sequential keys starting from 0.
+///
+/// # Examples
+///
+/// ```
+/// use ade_strongly_connected_components::pearce_iterative::scc_iterative;
+/// use ade_graph::implementations::{Node, Edge};
+/// use ade_graph::utils::build::build_graph;
+///
+/// // Graph with sequential keys: 0 -> 1 -> 2 -> 0 (a cycle), and a separate node 3
+/// let graph = build_graph::<Node, Edge>(
+///     vec![0, 1, 2, 3],
+///     vec![(0, 1), (1, 2), (2, 0), (2, 3)],
+/// );
+///
+/// let components = scc_iterative(&graph);
+/// assert_eq!(components.len(), 2);
+///
+/// // One component contains nodes 0, 1, 2 (a cycle)
+/// // Another component contains only node 3
+/// assert!(components.iter().any(|c| c.len() == 3 && c.contains(&0) && c.contains(&1) && c.contains(&2)));
+/// assert!(components.iter().any(|c| c.len() == 1 && c.contains(&3)));
+/// ```
+///
+/// ```
+/// use ade_strongly_connected_components::pearce_iterative::scc_iterative;
+/// use ade_graph::implementations::{Node, Edge};
+/// use ade_graph::utils::build::build_graph;
+///
+/// // Linear graph with sequential keys: 0 -> 1 -> 2 -> 3 (no cycles)
+/// let graph = build_graph::<Node, Edge>(
+///     vec![0, 1, 2, 3],
+///     vec![(0, 1), (1, 2), (2, 3)],
+/// );
+///
+/// let components = scc_iterative(&graph);
+/// // Each node is its own SCC
+/// assert_eq!(components.len(), 4);
+/// ```
+///
+/// ```
+/// use ade_strongly_connected_components::pearce_iterative::scc_iterative;
+/// use ade_graph::implementations::{Node, Edge};
+/// use ade_graph::utils::build::build_graph;
+///
+/// // Complex graph with multiple SCCs
+/// let graph = build_graph::<Node, Edge>(
+///     vec![0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+///     vec![
+///         (0, 1), (0, 4), (1, 2), (2, 3), (3, 1),
+///         (4, 0), (4, 5), (4, 7), (5, 6), (6, 4),
+///         (8, 9), (9, 8),
+///     ],
+/// );
+///
+/// let components = scc_iterative(&graph);
+/// // Expected SCCs: [0,4,5,6], [1,2,3], [7], [8,9]
+/// assert_eq!(components.len(), 4);
+/// ```
+///
+/// # Example: Non-sequential keys will panic
+///
+/// ```should_panic
+/// use ade_strongly_connected_components::pearce_iterative::scc_iterative;
+/// use ade_graph::implementations::{Node, Edge};
+/// use ade_graph::utils::build::build_graph;
+///
+/// // This graph has non-sequential keys (1, 3, 5) and will panic
+/// let graph = build_graph::<Node, Edge>(
+///     vec![1, 3, 5],
+///     vec![(1, 3), (3, 5), (5, 1)],
+/// );
+///
+/// // This will panic with INVALID_KEY_SEQUENCE
+/// scc_iterative(&graph);
+/// ```
 pub fn scc_iterative<N: NodeTrait, E: EdgeTrait>(
     graph: &impl GraphViewTrait<N, E>,
 ) -> Vec<Vec<u32>> {

@@ -1,9 +1,88 @@
 use ade_traits::{EdgeTrait, GraphViewTrait, NodeTrait};
 use std::collections::HashMap;
 
-// D.J. Pearce's algorithm for finding strongly connected components (SCCs).
-// Information Processing Letters 116 (2016) 47-52
-// Recursive implementation.
+/// Finds all strongly connected components (SCCs) in a directed graph.
+///
+/// This function implements D.J. Pearce's algorithm for finding strongly connected components,
+/// as described in "An Improved Algorithm for Finding the Strongly Connected Components of a
+/// Directed Graph" (Information Processing Letters 116, 2016, 47-52). This is the recursive
+/// implementation of the algorithm.
+///
+/// A strongly connected component is a maximal set of vertices where every vertex is reachable
+/// from every other vertex in the set. This implementation uses a depth-first search approach
+/// with optimizations that make it efficient for large graphs.
+///
+/// # Type Parameters
+///
+/// * `N` - The node type, which must implement [`NodeTrait`]
+/// * `E` - The edge type, which must implement [`EdgeTrait`]
+///
+/// # Parameters
+///
+/// * `graph` - A reference to any graph structure implementing [`GraphViewTrait`]
+///
+/// # Returns
+///
+/// A vector of strongly connected components, where each component is represented as a vector
+/// of node keys (`u32`). The order of components and the order of nodes within each component
+/// is not specified.
+///
+/// Returns an empty vector if the graph is empty.
+///
+/// # Examples
+///
+/// ```
+/// use ade_strongly_connected_components::pearce_recursive::scc;
+/// use ade_graph::implementations::{Node, Edge};
+/// use ade_graph::utils::build::build_graph;
+///
+/// // Graph with one SCC: 1 -> 2 -> 3 -> 1, and a separate node 4
+/// let graph = build_graph::<Node, Edge>(
+///     vec![1, 2, 3, 4],
+///     vec![(1, 2), (2, 3), (3, 1), (3, 4)],
+/// );
+///
+/// let components = scc(&graph);
+/// assert_eq!(components.len(), 2);
+///
+/// // One component contains nodes 1, 2, 3 (a cycle)
+/// // Another component contains only node 4
+/// assert!(components.iter().any(|c| c.len() == 3 && c.contains(&1) && c.contains(&2) && c.contains(&3)));
+/// assert!(components.iter().any(|c| c.len() == 1 && c.contains(&4)));
+/// ```
+///
+/// ```
+/// use ade_strongly_connected_components::pearce_recursive::scc;
+/// use ade_graph::implementations::{Node, Edge};
+/// use ade_graph::utils::build::build_graph;
+///
+/// // Linear graph: 1 -> 2 -> 3 -> 4 (no cycles)
+/// let graph = build_graph::<Node, Edge>(
+///     vec![1, 2, 3, 4],
+///     vec![(1, 2), (2, 3), (3, 4)],
+/// );
+///
+/// let components = scc(&graph);
+/// // Each node is its own SCC
+/// assert_eq!(components.len(), 4);
+/// ```
+///
+/// ```
+/// use ade_strongly_connected_components::pearce_recursive::scc;
+/// use ade_graph::implementations::{Node, Edge};
+/// use ade_graph::utils::build::build_graph;
+///
+/// // Fully connected cycle: 1 -> 2 -> 3 -> 4 -> 1
+/// let graph = build_graph::<Node, Edge>(
+///     vec![1, 2, 3, 4],
+///     vec![(1, 2), (2, 3), (3, 4), (4, 1)],
+/// );
+///
+/// let components = scc(&graph);
+/// // All nodes form a single SCC
+/// assert_eq!(components.len(), 1);
+/// assert_eq!(components[0].len(), 4);
+/// ```
 pub fn scc<N: NodeTrait, E: EdgeTrait>(graph: &impl GraphViewTrait<N, E>) -> Vec<Vec<u32>> {
     if graph.is_empty() {
         return Vec::new();
