@@ -6,9 +6,128 @@ use ade_strongly_connected_components::scc_iterative;
 use ade_traits::{EdgeTrait, GraphViewTrait, NodeTrait};
 use smallvec::SmallVec;
 
-// Johnson's algorithm for finding all elementary circuits in a directed graph
-// SIAM J. Comput., Vol. 4, No. 1, March 1975
-// https://www.cs.tufts.edu/comp/150GA/homeworks/hw1/Johnson%2075.PDF
+/// Finds all elementary circuits in a directed graph.
+///
+/// This function implements Johnson's algorithm for finding all elementary circuits (also known
+/// as elementary cycles or simple cycles) in a directed graph, as described in "Finding all the
+/// elementary circuits of a directed graph" (SIAM J. Comput., Vol. 4, No. 1, March 1975).
+///
+/// An elementary circuit is a closed path in the graph where no vertex appears twice, except
+/// that the first and last vertices are the same. For example, in the path `[0, 1, 2, 0]`,
+/// the circuit visits nodes 0 → 1 → 2 → 0.
+///
+/// # Type Parameters
+///
+/// * `N` - The node type, which must implement [`NodeTrait`]
+/// * `E` - The edge type, which must implement [`EdgeTrait`]
+///
+/// # Parameters
+///
+/// * `graph` - A reference to any graph structure implementing [`GraphViewTrait`]
+///
+/// # Returns
+///
+/// A vector of elementary circuits, where each circuit is represented as a vector of node keys
+/// (`u32`). Each circuit starts and ends with the same node. The order of circuits is not specified.
+///
+/// Returns an empty vector if the graph has no circuits.
+///
+/// # Requirements
+///
+/// **The graph must have sequential keys starting from 0** (i.e., 0, 1, 2, 3, ..., n-1).
+/// If the graph has non-sequential keys, the function will panic with [`INVALID_KEY_SEQUENCE`].
+///
+/// Use [`has_sequential_keys`](GraphViewTrait::has_sequential_keys) to check if a graph
+/// meets this requirement before calling this function.
+///
+/// # Panics
+///
+/// Panics if the graph does not have sequential keys starting from 0.
+///
+/// # Examples
+///
+/// ```
+/// use ade_elementary_circuits::elementary_circuits;
+/// use ade_graph::implementations::{Node, Edge};
+/// use ade_graph::utils::build::build_graph;
+///
+/// // Simple triangle circuit: 0 -> 1 -> 2 -> 0
+/// let graph = build_graph::<Node, Edge>(
+///     vec![0, 1, 2],
+///     vec![(0, 1), (1, 2), (2, 0)],
+/// );
+///
+/// let circuits = elementary_circuits(&graph);
+/// assert_eq!(circuits.len(), 1);
+/// // The circuit is [0, 1, 2, 0] (or a rotation of it)
+/// assert_eq!(circuits[0].len(), 4);
+/// assert_eq!(circuits[0][0], circuits[0][3]); // First and last are the same
+/// ```
+///
+/// ```
+/// use ade_elementary_circuits::elementary_circuits;
+/// use ade_graph::implementations::{Node, Edge};
+/// use ade_graph::utils::build::build_graph;
+///
+/// // Graph with self-loop: node 0 has an edge to itself
+/// let graph = build_graph::<Node, Edge>(
+///     vec![0],
+///     vec![(0, 0)],
+/// );
+///
+/// let circuits = elementary_circuits(&graph);
+/// assert_eq!(circuits.len(), 1);
+/// assert_eq!(circuits[0], vec![0, 0]); // Self-loop circuit
+/// ```
+///
+/// ```
+/// use ade_elementary_circuits::elementary_circuits;
+/// use ade_graph::implementations::{Node, Edge};
+/// use ade_graph::utils::build::build_graph;
+///
+/// // Linear graph with no circuits
+/// let graph = build_graph::<Node, Edge>(
+///     vec![0, 1, 2, 3],
+///     vec![(0, 1), (1, 2), (2, 3)],
+/// );
+///
+/// let circuits = elementary_circuits(&graph);
+/// assert_eq!(circuits.len(), 0); // No circuits in a linear graph
+/// ```
+///
+/// ```
+/// use ade_elementary_circuits::elementary_circuits;
+/// use ade_graph::implementations::{Node, Edge};
+/// use ade_graph::utils::build::build_graph;
+///
+/// // Graph with multiple circuits of different lengths
+/// let graph = build_graph::<Node, Edge>(
+///     vec![0, 1, 2],
+///     vec![(0, 1), (1, 2), (2, 0), (1, 0)],
+/// );
+///
+/// let circuits = elementary_circuits(&graph);
+/// assert_eq!(circuits.len(), 2);
+/// assert!(circuits.iter().any(|c| c.len() == 3)); // (0→1→0)
+/// assert!(circuits.iter().any(|c| c.len() == 4)); // (0→1→2→0)
+/// ```
+///
+/// # Example: Non-sequential keys will panic
+///
+/// ```should_panic
+/// use ade_elementary_circuits::elementary_circuits;
+/// use ade_graph::implementations::{Node, Edge};
+/// use ade_graph::utils::build::build_graph;
+///
+/// // This graph has non-sequential keys (1, 3, 5) and will panic
+/// let graph = build_graph::<Node, Edge>(
+///     vec![1, 3, 5],
+///     vec![(1, 3), (3, 5), (5, 1)],
+/// );
+///
+/// // This will panic with INVALID_KEY_SEQUENCE
+/// elementary_circuits(&graph);
+/// ```
 pub fn elementary_circuits<N: NodeTrait, E: EdgeTrait>(
     graph: &impl GraphViewTrait<N, E>,
 ) -> Vec<Vec<u32>> {
