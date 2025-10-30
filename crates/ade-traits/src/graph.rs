@@ -28,6 +28,19 @@ use crate::{EdgeTrait, NodeTrait};
 /// assert!(graph.has_edge(1, 2));
 /// ```
 pub trait GraphViewTrait<N: NodeTrait, E: EdgeTrait> {
+    /// Returns the number of nodes in the graph.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use ade_graph::implementations::{Graph, Node, Edge};
+    /// use ade_traits::GraphViewTrait;
+    ///
+    /// let graph = Graph::<Node, Edge>::new(vec![Node::new(1), Node::new(2), Node::new(3)], vec![]);
+    /// assert_eq!(graph.node_count(), 3);
+    /// ```
+    fn node_count(&self) -> usize;
+
     /// Returns `true` if the graph contains no nodes.
     ///
     /// # Examples

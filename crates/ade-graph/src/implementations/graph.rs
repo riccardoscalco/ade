@@ -351,6 +351,10 @@ impl<N: NodeTrait, E: EdgeTrait> Graph<N, E> {
 }
 
 impl<N: NodeTrait, E: EdgeTrait> GraphViewTrait<N, E> for Graph<N, E> {
+    fn node_count(&self) -> usize {
+        self.nodes.len()
+    }
+
     fn is_empty(&self) -> bool {
         self.nodes.is_empty()
     }
@@ -477,6 +481,17 @@ mod tests {
     use crate::implementations::edge::Edge;
     use crate::implementations::node::Node;
     use ade_common::assert_panics_with;
+
+    #[test]
+    fn test_node_count() {
+        let mut graph = Graph::<Node, Edge>::new(Vec::new(), Vec::new());
+
+        graph.add_node(Node::new(1));
+        graph.add_node(Node::new(2));
+        graph.add_node(Node::new(3));
+
+        assert_eq!(graph.node_count(), 3);
+    }
 
     #[test]
     fn test_is_empty() {

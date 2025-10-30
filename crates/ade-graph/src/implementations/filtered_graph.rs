@@ -249,6 +249,10 @@ impl<'a, N: NodeTrait, E: EdgeTrait> FilteredGraph<'a, N, E> {
 }
 
 impl<N: NodeTrait, E: EdgeTrait> GraphViewTrait<N, E> for FilteredGraph<'_, N, E> {
+    fn node_count(&self) -> usize {
+        self.active.count_ones(..)
+    }
+
     fn is_empty(&self) -> bool {
         self.active.count_ones(..) == 0
     }
@@ -383,6 +387,16 @@ mod tests {
     use super::*;
     use crate::implementations::{Edge, Node};
     use ade_traits::GraphViewTrait;
+
+    #[test]
+    fn test_node_count() {
+        let mut base_graph = Graph::<Node, Edge>::new(Vec::new(), Vec::new());
+        for i in 0..5 {
+            base_graph.add_node(Node::new(i));
+        }
+        let filtered = FilteredGraph::new(&base_graph, vec![0, 1, 2]);
+        assert_eq!(filtered.node_count(), 3);
+    }
 
     #[test]
     fn test_filtered_graph_has_sequential_keys() {
